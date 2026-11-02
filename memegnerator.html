@@ -97,6 +97,11 @@
         </div>
         <div class="row" style="margin-bottom:8px">
           <button class="btn sm pri" id="viralBtn" type="button">Memes virales</button>
+          <button class="btn sm pri" id="redditBtn" type="button">Reddit</button>
+        </div>
+        <div class="row" style="margin-bottom:8px;display:none" id="apiBaseRow">
+          <input class="in" id="apiBase" type="text" placeholder="Servidor IA: http://IP-PC:5005" inputmode="url">
+          <button class="btn sm" id="apiBaseSave" type="button">Guardar</button>
         </div>
         <div class="tpl" id="tpl"></div>
       </div>
@@ -224,6 +229,6 @@
 <div class="drop" id="drop">Suelta tu imagen aquí</div>
 <div id="toast" role="status" aria-live="polite"></div>
 
-<script type="module" src="./app.mjs?v=3"></script>
+<script type="module" src="./app.mjs?v=6"></script>
 </body>
 </html>
