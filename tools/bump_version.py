@@ -33,12 +33,14 @@ CACHE_PREFIX = "memestudio-v"
 HOOK_SECTION = f'''{HOOK_START}
 # Versionado automatico del front: sube ?v=N de lo tocado en public/,
 # re-sincroniza los assets del APK y commita como chore(release).
-# Ignora sus propios commits por el marcador {MARKER}.
+# Log de diagnostico en ~/.cache/bump_version.log.
 (
     _top=$(git rev-parse --show-toplevel 2>/dev/null) || exit 0
     cd "$_top" || exit 0
     [ -f tools/bump_version.py ] || exit 0
-    python3 tools/bump_version.py >/dev/null 2>&1 &
+    _bump_log="$HOME/.cache/bump_version.log"
+    mkdir -p "$(dirname "$_bump_log")"
+    python3 tools/bump_version.py >>"$_bump_log" 2>&1 &
 ) >/dev/null 2>&1 &
 {HOOK_END}'''
 
@@ -102,13 +104,21 @@ def sync_android(top):
     return True
 
 
+def bump_subject_skip(message):
+    """True si el HEAD es suyo del bump o pide omitirse (SOLO el asunto:
+    mirar el mensaje completo triggereaba falsos positivos cuando el
+    marcador aparecia citado en el cuerpo, p.ej. al documentar la tool)."""
+    subject = message.splitlines()[0].strip() if message.strip() else ''
+    return subject.startswith('chore(release): bump') or subject.endswith(MARKER)
+
+
 def process_head(dry_run=False, verbose=False):
     top = repo_root()
     if not top or not (top / ".git").exists():
         return "no es un repo git; nada que hacer"
 
     message = head_message(top)
-    if MARKER in message:
+    if bump_subject_skip(message):
         return "commit propio del bump; omitido"
 
     changed = head_changed_files(top)
@@ -172,7 +182,7 @@ def process_head(dry_run=False, verbose=False):
     run(["git", "add", "-A"], cwd=top)
     out = run(
         ["git", "commit", "-m",
-         f"chore(release): bump de versiones y assets Android {MARKER}"],
+         "chore(release): bump de versiones y assets Android"],
         cwd=top,
     )
     if out is None:
@@ -188,16 +198,28 @@ def install_hook():
     hook.parent.mkdir(parents=True, exist_ok=True)
     current = hook.read_text(encoding="utf-8") if hook.exists() else "#!/bin/sh\n"
     if HOOK_START in current:
-        return "la seccion del hook ya existe; nada que hacer"
+        # actualizable: remueve la seccion previa y re-instala la vigente
+        lines = current.splitlines(keepends=True)
+        out, skipping = [], False
+        for line in lines:
+            if line.startswith(HOOK_START):
+                skipping = True
+                continue
+            if line.startswith(HOOK_END):
+                skipping = False
+                continue
+            if not skipping:
+                out.append(line)
+        current = "".join(out)
     with hook.open("a", encoding="utf-8") as fh:
-        if not current.endswith("\n"):
+        if current and not current.endswith("\n"):
             fh.write("\n")
         fh.write("\n" + HOOK_SECTION + "\n")
     try:
         hook.chmod(0o755)
     except OSError:
         subprocess.run(["chmod", "+x", str(hook)], timeout=10)
-    return f"seccion instalada en {hook} (idempotente: se puede re-ejecutar)"
+    return f"seccion (re)instalada en {hook}"
 
 
 def main():
