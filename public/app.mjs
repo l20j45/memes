@@ -142,8 +142,11 @@ function handleUnauthorized() {
 }
 
 
-const cv = $('#cv');
-const cx = cv.getContext('2d');
+// cv/cx reasignables: render() los apunta temporalmente al canvas de
+// exportacion (tamano del preset) para que draw() compongala export a
+// resolucion real sin estirar el preview (ver invariantes AGENTS.md).
+let cv = $('#cv');
+let cx = cv.getContext('2d');
 
 function cur() {
   return state.layers[state.sel];
@@ -356,8 +359,12 @@ function draw(exp = false) {
 
   cx.clearRect(0, 0, W, H);
   if ($('#bgTransparent').checked) {
-    cx.fillStyle = checkerPattern(cx);
-    cx.fillRect(0, 0, W, H);
+    // en EXPORT el fondo debe quedar realmente transparente (sin cuadros);
+    // el patron PNG es solo guia de preview
+    if (!exp) {
+      cx.fillStyle = checkerPattern(cx);
+      cx.fillRect(0, 0, W, H);
+    }
   } else {
     cx.fillStyle = '#fff';
     cx.fillRect(0, 0, W, H);
@@ -1846,16 +1853,24 @@ function clearSelectedText() {
 
 function render(type, presetKey = $('#exportPreset').value) {
   const preset = EXPORT_PRESETS[presetKey] || EXPORT_PRESETS.original;
+  // 'original' = las dimensiones REALES del lienzo (state.art), no un square
+  // hardcodeado; presets numericos = esas medidas exactas.
+  const target = (preset.w && preset.h)
+    ? { w: preset.w, h: preset.h }
+    : { w: state.art.w, h: state.art.h };
   const out = document.createElement('canvas');
-  out.width = preset.w || cv.width;
-  out.height = preset.h || cv.height;
+  out.width = target.w;
+  out.height = target.h;
   const ctx = out.getContext('2d');
 
   const previous = {
     selK: state.selK,
     sel: state.sel,
-    cleanOn: state.cleanOn
+    cleanOn: state.cleanOn,
+    art: { w: state.art.w, h: state.art.h }
   };
+  const prevCv = cv;
+  const prevCx = cx;
 
   try {
     state.selK = null;
@@ -1863,18 +1878,20 @@ function render(type, presetKey = $('#exportPreset').value) {
     state.cleanOn = false;
     $('#cleanOn').checked = false;
     cv.style.cursor = 'default';
+    // La geometria completa del editor es NORMALIZADA (posiciones 0..1,
+    // texto s/600*W, marca de agua, barras %): apuntando cv/cx al canvas de
+    // salida y forzando state.art al tamano objetivo, draw() compone la
+    // export a resolucion natural SIN estirar el preview (antes
+    // drawImage(cv,...) deformaba el meme si el preset no coincidia
+    // con el aspecto del lienzo - bug de TikTok/square reportado).
+    state.art = target;
+    cv = out;
+    cx = ctx;
     draw(true);
-    if (type === 'image/jpeg') {
-      // JPEG no soporta canal alpha: se aplana siempre sobre un color.
-      ctx.fillStyle = $('#bgTransparent').checked ? '#ffffff' : $('#bg').value;
-      ctx.fillRect(0, 0, out.width, out.height);
-    } else if (!$('#bgTransparent').checked) {
-      // PNG/WebP respetan la transparencia: solo se rellena si hay color de fondo.
-      ctx.fillStyle = $('#bg').value;
-      ctx.fillRect(0, 0, out.width, out.height);
-    }
-    ctx.drawImage(cv, 0, 0, out.width, out.height);
   } finally {
+    state.art = previous.art;
+    cv = prevCv;
+    cx = prevCx;
     state.selK = previous.selK;
     state.sel = previous.sel;
     state.cleanOn = previous.cleanOn;

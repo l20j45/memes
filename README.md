@@ -62,7 +62,7 @@
 - **Marca de Agua de Imagen (logo):** además del texto, elige tu logo (PNG con transparencia) con ancho relativo al lienzo; opacidad, posición, desenfoque y sombra compartidas con el texto. Persiste en autosave y en borradores remotos.
 - **Configuración Milimétrica:** Posición X/Y en porcentaje, tamaño, opacidad, desenfoque y colores.
 - **Exportación Multiformato:** Descarga directa en `PNG` (máxima fidelidad), `JPG` (tamaño ligero) o `WebP` (optimizado para web).
-- **Resoluciones Predefinidas:** Original, 1080×1080 (Instagram Post), 1200×1200, 1080×1920 (TikTok/Reels/Stories) y 1920×1080 (YouTube/Twitter).
+- **Resoluciones Predefinidas:** Original (las dimensiones reales de tu lienzo, siempre sin deformar), 1080×1080 (Instagram Post), 1200×1200, 1080×1920 (TikTok/Reels/Stories) y 1920×1080 (YouTube/Twitter). La exportación compone a resolución real en el preset elegido (sin estirar la vista previa).
 - **Copiar al Portapapeles:** Copia directa en memoria como PNG para pegar inmediatamente en Discord, Telegram, WhatsApp Web o redes sociales.
 
 ### 🌐 Catálogo y Plantillas Virales
