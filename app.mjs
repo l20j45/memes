@@ -179,6 +179,7 @@ async function loadState(idx) {
   }));
 
   state.isel = clamp(state.isel, 0, Math.max(0, state.imgs.length - 1));
+  cv.style.cursor = state.cleanOn ? 'crosshair' : 'default';
   normalizeSelection();
   sync();
   schedule();
@@ -267,6 +268,26 @@ function getWatermarkBox(ctx, W, H) {
   return { x: left, y: top, w: metrics.width, h: wm.size || 28 };
 }
 
+// Patrón de cuadrícula estilo "PNG transparente": cuadros blanco/gris claro
+// para que el usuario vea dónde NO hay fondo. Cacheado porque se repinta a
+// cada frame del bucle de dibujo.
+let checkerCache = null;
+function checkerPattern(context) {
+  if (!checkerCache) {
+    const tile = document.createElement('canvas');
+    tile.width = 20;
+    tile.height = 20;
+    const t = tile.getContext('2d');
+    t.fillStyle = '#d6dae2';
+    t.fillRect(0, 0, 20, 20);
+    t.fillStyle = '#f2f4f8';
+    t.fillRect(0, 0, 10, 10);
+    t.fillRect(10, 10, 10, 10);
+    checkerCache = context.createPattern(tile, 'repeat');
+  }
+  return checkerCache;
+}
+
 function draw(exp = false) {
   const { W, bh, H } = geom();
   if (cv.width !== W || cv.height !== H) {
@@ -275,10 +296,15 @@ function draw(exp = false) {
   }
 
   cx.clearRect(0, 0, W, H);
-  cx.fillStyle = '#fff';
-  cx.fillRect(0, 0, W, H);
-  cx.fillStyle = $('#bg').value;
-  cx.fillRect(0, bh, W, state.art.h);
+  if ($('#bgTransparent').checked) {
+    cx.fillStyle = checkerPattern(cx);
+    cx.fillRect(0, 0, W, H);
+  } else {
+    cx.fillStyle = '#fff';
+    cx.fillRect(0, 0, W, H);
+    cx.fillStyle = $('#bg').value;
+    cx.fillRect(0, bh, W, state.art.h);
+  }
 
   cx.save();
   cx.beginPath();
@@ -373,12 +399,12 @@ function draw(exp = false) {
     cx.shadowColor = shadowColor;
     cx.shadowBlur = shadowBlur;
     cx.globalAlpha = opacity;
-    const maxWidth = align === 'left' || align === 'right' ? W * .72 : W * .92;
+    const maxWidth = W * .92;
     const lines = wrap(textValue, maxWidth);
     const lh = px * 1.15;
     const block = lines.length * lh;
     const cy = clamp(l.y * H, block / 2, H - block / 2);
-    const anchorX = align === 'left' ? W * .12 : align === 'right' ? W * .88 : l.x * W;
+    const anchorX = l.x * W;
     cx.fillStyle = l.fill;
     cx.strokeStyle = l.stroke;
     cx.lineWidth = l.sw / 600 * W * 1.5;
@@ -467,7 +493,15 @@ function getHandle(p, b, k) {
 
 function applyRatio() {
   const value = $('#ratio').value;
-  state.art = value === 'orig' ? { w: state.orig.w, h: state.orig.h } : { w: 1080, h: Math.round(1080 * Number(value)) };
+  if (value === 'orig') {
+    state.art = { w: state.orig.w, h: state.orig.h };
+    return;
+  }
+  // Los presets son dimensiones reales en píxeles ("ancho:alto"), no un
+  // factor multiplicado por 1080: así 16:9 es 1920×1080 (horizontal) y
+  // 9:16 es 1080×1920 (TikTok/Reels/Stories).
+  const [w, h] = value.split(':').map(Number);
+  state.art = { w: w, h: h };
 }
 
 function fitW(c, cover) {
@@ -608,6 +642,7 @@ function sync() {
   $('#bar').value = state.bar;
   $('#upper').checked = state.upper;
   $('#showGuides').checked = !!state.guides;
+  $('#cleanOn').checked = !!state.cleanOn;
   $('#sizeV').textContent = layer.s;
   $('#swV').textContent = layer.sw;
   $('#shadowV').textContent = layer.shadowBlur ?? 0;
@@ -1084,9 +1119,28 @@ function inpaint(d, hole, w, h) {
   }
 }
 
+// Bandera de proceso en curso: evita lanzar la inferencia de rembg una
+// segunda vez mientras la primera sigue corriendo en el backend (cada llamada
+// ejecuta un modelo U2-Net bloqueante en CPU y encolarlas puede saturar
+// completamente la máquina).
+let bgRealBusy = false;
+
 async function removeBackgroundReal() {
   const image = state.imgs[state.isel];
   if (!image) return toast('Selecciona una imagen primero.', true);
+
+  if (bgRealBusy) {
+    return toast('Ya hay un proceso de fondo real en marcha. Espera a que termine.', true);
+  }
+
+  const btn = $('#removeBgRealBtn');
+  const originalLabel = btn.textContent;
+  bgRealBusy = true;
+  btn.disabled = true;
+  btn.classList.add('loading');
+  btn.setAttribute('aria-busy', 'true');
+  btn.textContent = 'Procesando…';
+  toast('Procesando fondo con IA… puede tardar unos segundos.');
 
   try {
     const canvas = document.createElement('canvas');
@@ -1101,7 +1155,9 @@ async function removeBackgroundReal() {
     const form = new FormData();
     form.append('image', blob, 'image.png');
 
-    const response = await fetch('http://127.0.0.1:5005/api/remove-bg', {
+    // Backend integrado en FastAPI: siempre servimos el frontend y la API
+    // desde el mismo servidor (server.py), así que una ruta relativa basta.
+    const response = await fetch('/api/remove-bg', {
       method: 'POST',
       body: form
     });
@@ -1129,6 +1185,14 @@ async function removeBackgroundReal() {
   } catch (error) {
     console.error(error);
     toast('El backend de fondo real no está disponible. Inícialo en Python.', true);
+  } finally {
+    // El bloqueo SIEMPRE se libera, incluso si el fetch o el decode fallan,
+    // para que el botón pueda volver a usarse después de un error.
+    bgRealBusy = false;
+    btn.disabled = false;
+    btn.classList.remove('loading');
+    btn.removeAttribute('aria-busy');
+    btn.textContent = originalLabel;
   }
 }
 
@@ -1290,6 +1354,7 @@ function saveLocal() {
       upper: state.upper,
       guides: state.guides,
       bg: $('#bg').value,
+      bgTransparent: $('#bgTransparent').checked,
       wm: state.wm
     };
     localStorage.setItem('meme_studio_draft', JSON.stringify(payload));
@@ -1311,6 +1376,7 @@ function loadLocal() {
     state.guides = !!(data.guides ?? state.guides);
     state.wm = { ...state.wm, ...(data.wm || {}) };
     if (data.bg) $('#bg').value = data.bg;
+    if (data.bgTransparent !== undefined) $('#bgTransparent').checked = !!data.bgTransparent;
   } catch (error) {
     console.warn('No se pudo restaurar el borrador', error);
   }
@@ -1356,14 +1422,25 @@ function render(type, presetKey = $('#exportPreset').value) {
     state.selK = null;
     state.sel = -1;
     state.cleanOn = false;
+    $('#cleanOn').checked = false;
+    cv.style.cursor = 'default';
     draw(true);
-    ctx.fillStyle = $('#bg').value;
-    ctx.fillRect(0, 0, out.width, out.height);
+    if (type === 'image/jpeg') {
+      // JPEG no soporta canal alpha: se aplana siempre sobre un color.
+      ctx.fillStyle = $('#bgTransparent').checked ? '#ffffff' : $('#bg').value;
+      ctx.fillRect(0, 0, out.width, out.height);
+    } else if (!$('#bgTransparent').checked) {
+      // PNG/WebP respetan la transparencia: solo se rellena si hay color de fondo.
+      ctx.fillStyle = $('#bg').value;
+      ctx.fillRect(0, 0, out.width, out.height);
+    }
     ctx.drawImage(cv, 0, 0, out.width, out.height);
   } finally {
     state.selK = previous.selK;
     state.sel = previous.sel;
     state.cleanOn = previous.cleanOn;
+    $('#cleanOn').checked = !!state.cleanOn;
+    cv.style.cursor = state.cleanOn ? 'crosshair' : 'default';
     draw();
   }
 
@@ -1734,6 +1811,11 @@ function initEvents() {
     saveLocal();
   });
 
+  $('#bgTransparent').addEventListener('change', () => {
+    schedule();
+    saveLocal();
+  });
+
   $('#font').addEventListener('change', (event) => {
     cur().f = event.target.value;
     sync();
@@ -1915,6 +1997,7 @@ function initEvents() {
   $('#alignLeftBtn').onclick = () => {
     if (!cur()) return;
     cur().align = 'left';
+    cur().x = .12;
     pushHistory();
     sync();
     schedule();
@@ -1922,6 +2005,7 @@ function initEvents() {
   $('#alignCenterBtn').onclick = () => {
     if (!cur()) return;
     cur().align = 'center';
+    cur().x = .5;
     pushHistory();
     sync();
     schedule();
@@ -1929,6 +2013,7 @@ function initEvents() {
   $('#alignRightBtn').onclick = () => {
     if (!cur()) return;
     cur().align = 'right';
+    cur().x = .88;
     pushHistory();
     sync();
     schedule();
@@ -1939,6 +2024,10 @@ function initEvents() {
     if (!key) return;
     if (key === 'bar') {
       state.bar = 24;
+      if (!state.layers.length) {
+        state.layers = [mk('', { y: .1 })];
+        state.sel = 0;
+      }
       state.layers.forEach((layer) => Object.assign(layer, PRESETS.classic));
       Object.assign(state.layers[0], { f: 'Arial', fill: '#000000', stroke: '#000000', s: 40, sw: 0, y: state.bar / (200 + 2 * state.bar) });
     } else {
@@ -1957,6 +2046,7 @@ function initEvents() {
     state.upper = true;
     $('#ratio').value = 'orig';
     $('#bg').value = '#ffffff';
+    $('#bgTransparent').checked = true;
     state.imgs = [];
     state.orig = { w: 900, h: 900 };
     applyRatio();
@@ -2012,6 +2102,8 @@ function initEvents() {
     if (!state.imgs.length) return toast('Añade una imagen primero.', true);
     state.selK = 'img';
     state.cleanOn = false;
+    $('#cleanOn').checked = false;
+    cv.style.cursor = 'default';
     removeBackground();
   };
 
@@ -2022,6 +2114,13 @@ function initEvents() {
     state.selK = 'img';
     state.cleanOn = true;
     cv.style.cursor = 'crosshair';
+    $('#cleanOn').checked = true;
+    const cleanSection = $('#cleanOn').closest('.accordion-item');
+    if (cleanSection && cleanSection.classList.contains('is-collapsed')) {
+      cleanSection.classList.remove('is-collapsed');
+      const head = cleanSection.querySelector('.accordion-head');
+      if (head) head.setAttribute('aria-expanded', 'true');
+    }
     toast('Pinta sobre el objeto que quieres borrar.');
     schedule();
   };
@@ -2142,3 +2241,6 @@ function initEvents() {
 }
 
 initEvents();
+if (document.fonts && document.fonts.ready) {
+  document.fonts.ready.then(() => schedule());
+}
