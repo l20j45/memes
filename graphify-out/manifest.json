@@ -18,9 +18,9 @@
     "semantic_hash": ""
   },
   "AGENTS.md": {
-    "mtime": 1793653446.3993013,
-    "seen": 1793653696.758763,
-    "ast_hash": "fc08ed22473d50298995ea0a3c2ce3bc",
+    "mtime": 1793653698.2015321,
+    "seen": 1793653851.748679,
+    "ast_hash": "163bb259324c4399d08bbb4d962b409b",
     "semantic_hash": ""
   },
   "README.md": {
@@ -48,9 +48,9 @@
     "semantic_hash": ""
   },
   "android/app/build.gradle": {
-    "mtime": 1793638486.33296,
-    "seen": 1793642089.694514,
-    "ast_hash": "dc50b01561e78ba68d0ea33b7a4bb6f1",
+    "mtime": 1793653793.2522707,
+    "seen": 1793653851.7486389,
+    "ast_hash": "bcf2da4fb14e8692b9aa3de8fb0be1df",
     "semantic_hash": ""
   },
   "android/app/src/main/assets/app.mjs": {
@@ -78,9 +78,9 @@
     "semantic_hash": ""
   },
   "android/README_ANDROID.md": {
-    "mtime": 1793653690.3110874,
-    "seen": 1793653696.758764,
-    "ast_hash": "237473a5f35b7ef0103964991b0bafe3",
+    "mtime": 1793653845.4421484,
+    "seen": 1793653851.7486799,
+    "ast_hash": "4f294356f41ca85433838a06e591609d",
     "semantic_hash": ""
   },
   "android/app/src/main/assets/index.html": {

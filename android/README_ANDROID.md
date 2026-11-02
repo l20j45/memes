@@ -75,6 +75,17 @@ JAVA_HOME=~/jdks/jdk17/Contents/Home \
 > [!WARNING]
 > **Backup del keystore obligatorio** (contraseña de `memestudio.properties` incluida): sin ese `.jks` NO se puede publicar ninguna actualización de la app — Android rechaza instalar una APK firmada con otro certificado *sobre* la existente (Android exige siempre la misma firma). Guárdalo además en un password manager o disco aparte y sube `versionCode` con cada release para que el móvil acepte actualizar.
 
+#### Bundle para Google Play (`.aab`)
+
+Google Play exige el formato **Play App Bundle** (a Play Store se le sube un `.aab`, no un `.apk`; Play genera los APK optimizados por dispositivo). Con este setup ya montado es una orden el bundle **firmado con el mismo keystore**:
+
+```bash
+tools/build_apk.sh bundle     # → android/app/build/outputs/bundle/release/app-release.aab
+                              # (verás la task :app:signReleaseBundle en el log)
+```
+
+En la Play Console: Crear app → **Production/Testing → Create release → Upload el .aab**. La primera vez acepta activar **Play App Signing** (Google custodia la firma de instalación; tu `memestudio.jks` queda como signing/como hace ahora). Sube `versionCode` en `android/app/build.gradle` con cada envie.
+
 ## Qué funciona y qué no dentro del móvil
 
 | Función | ¿En Android? |

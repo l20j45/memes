@@ -1,11 +1,13 @@
 #!/bin/sh
-# Compila la APK de Meme Studio Pro sin Android Studio.
+# Compila la APK/AAB de Meme Studio Pro sin Android Studio.
 #
 # Uso:
-#   tools/build_apk.sh            # APK debug (installable directo)
-#   tools/build_apk.sh release    # APK release NO firmada (para firmar aparte)
+#   tools/build_apk.sh              # APK debug (installable directo)
+#   tools/build_apk.sh release      # APK release firmada (keystore en android/keystore/)
+#   tools/build_apk.sh bundle       # AAB release firmada (Google Play)
 #
-# Output: android/app/build/outputs/apk/{debug,release}/*.apk
+# Output: android/app/build/outputs/apk/{debug,release}/...apk
+#         android/app/build/outputs/bundle/release/...aab
 #
 # Requirements:
 #   - Android SDK en $HOME/Library/Android/sdk (o $ANDROID_HOME)
@@ -24,12 +26,15 @@ GRADLE="${GRADLE:-$HOME/jdks/gradle-8.7/bin/gradle}"
 [ -x "$GRADLE" ] || { echo "ERROR: no hay Gradle; descarga gradle-8.7-bin.zip a ~/jdks" >&2; exit 1; }
 [ -x "$JAVA_HOME/bin/java" ] || { echo "ERROR: falta JDK 17 en $JAVA_HOME" >&2; exit 1; }
 
-TASK="assembleDebug"
-[ "${1:-}" = "release" ] && TASK="assembleRelease"
+TARGET="${1:-}"
+case "$TARGET" in
+  release)  TASK="assembleRelease"  ; OUT="apk/release"     ;;
+  bundle)   TASK="bundleRelease"    ; OUT="bundle/release"  ;;
+  "")       TASK="assembleDebug"    ; OUT="apk/debug"       ;;
+  *) echo "uso: tools/build_apk.sh [release|bundle] (default: debug APK)" >&2; exit 1 ;;
+esac
 
 echo "==> JAVA_HOME=$JAVA_HOME"
 echo "==> ANDROID_HOME=$ANDROID_HOME"
-echo "==> Gradle $("$GRADLE" --version 2>/dev/null | grep Gradle) task=$TASK"
-"$GRADLE" --version 2>/dev/null | grep -E 'Gradle|JVM:' | head -3
 JAVA_HOME="$JAVA_HOME" ANDROID_HOME="$ANDROID_HOME" "$GRADLE" "$TASK" --no-daemon
-echo "==> APK en: app/build/outputs/apk/${TASK#assemble}/"
+echo "==> Artefacto en: android/app/build/outputs/$OUT/"
