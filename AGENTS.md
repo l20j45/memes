@@ -23,8 +23,12 @@ Este documento describe la arquitectura, flujo de datos, convenciones y peculiar
 | `server.py` | Servidor FastAPI con el endpoint `/api/remove-bg` para quitar fondos mediante IA. |
 | `requirements.txt` | Dependencias Python requeridas (`fastapi`, `uvicorn[standard]`, `rembg[cpu]`, `pillow`). |
 | `Dockerfile` | Imagen única multi-arch (x86/ARM, base `python:3.11-slim`); CMD `python server.py`. |
-| `docker-compose.yml` | Servicio `memestudio`: puerto 5005, volumen `models` (persistencia del caché de modelos rembg en `~/.u2net` y `~/.rembg`), healthcheck vía `/health`, passthrough de `REMBG_MODEL`. |
+| `docker-compose.yml` | Servicio `memestudio`: mapeo `${HOST_PORT:-5005}:5005`, volumen `models` (persistencia del caché de modelos rembg en `~/.u2net` y `~/.rembg`), healthcheck vía `/health` e inyección de la config desde `.env` (REMBG_MODEL, CORS_ORIGINS, REDDIT_SUBS, REDDIT_TERMS, MEME_CACHE_TTL, IMG_CACHE_MAX). |
 | `.dockerignore` | Excluye del contexto de build: `.git`, `.venv`, `.kindex/`, `graphify-out/`, `tools/`, docs, cachés. |
+| `.env.example` | Plantilla de configuración: REMBG_MODEL, PORT/HOST/HOST_PORT, CORS_ORIGINS, REDDIT_SUBS, REDDIT_TERMS, MEME_CACHE_TTL, IMG_CACHE_MAX. Copiar a `.env` (ignorado por Git); lo leen `server.py` (loader propio sin deps) y `docker compose`. En Docker el contenedor siempre escucha 0.0.0.0:5005; `HOST_PORT` cambia solo el mapeo. |
+| `android/` | App Android (APK): WebView Kotlin que empaqueta el frontend web como assets (una sola base de código, sin port RN/Flutter). Ver `android/README_ANDROID.md`. |
+| `android/app/src/main/java/.../MainActivity.kt` | WebView con ES modules sobre `file://` (flags de acceso a archivos) + bridge `window.AndroidSaver.saveImage(dataUrl, filename)` que guarda en la galería via MediaStore. |
+| `android/app/src/main/assets/` | Copia del frontend: re-sincronizar con `Copy-Item memegnerator.html, app.mjs, styles.css, index.html android\app\src\main\assets\ -Force` tras cada cambio web (y subir `?v=N`). |
 | `tools/remove_bg.py` | Script de línea de comandos para quitar fondos a imágenes individuales. |
 | `tools/remove_bg.bat` | Script batch para invocar `tools/remove_bg.py` en entornos Windows. |
 | `tools/refresh_graph_docs.py` | Hook helper: sincroniza el bloque de estadísticas de Graphify en `AGENTS.md` con `graphify-out/graph.json` tras cada commit/cambio de rama. |
@@ -69,6 +73,11 @@ El estado de la aplicación reside en el objeto singleton `state`:
 
 6. **KIndex limita su alcance al repositorio local:**
    - El binario de KIndex restringe el alcance al repositorio local que se escanea (Security Error ante cualquier path externo). Todas sus operaciones (`scan`, `query`, `deps`, etc.) se ejecutan sobre ese repositorio y fallarán con error si se le pide otro. En un clon en otra plataforma (Linux/ARM) este binario de Windows no correrá: borrar `.kindex/` y desinstalar sus hooks.
+
+7. **Android (`android/`): una sola base de código web, backend ausente en el móvil:**
+   - El APK es un WebView con el frontend web como assets; NO es un port a React Native/Flutter y **no debe duplicarse la lógica**: el mismo `app.mjs` detecta `window.AndroidSaver` (`NATIVE_ANDROID`) y usa `HAS_BACKEND`/`apiUrl()` para decidir dónde llamar a la API.
+   - En Android el backend de rembg no existe: "Quitar fondo real" exige configurar "Servidor IA" (http://IP-PC:5005 del PC en la misma red, guardado en `localStorage.apiBase`); la búsqueda Imgflip va por la API directa (fallback ya existente) y Reddit no está disponible sin backend.
+   - Los assets son una copia: tras cambios web hay que re-copiar con el comando de la tabla de archivos y re-subir el cache-busting `?v=N`; compila con Android Studio (ver `android/README_ANDROID.md`).
 
 ---
 
@@ -140,7 +149,7 @@ El parser de esta versión **no extrae símbolos de archivos `.py` ni `.mjs`** (
 Graphify (v0.9.100) construye y mantiene el grafo de conocimiento **real** del proyecto con tree-sitter AST (sí compiló `server.py`, `app.mjs`, `tools/remove_bg.py`; respeta `.gitignore`, así que `.venv/` y `.kindex/` están excluidos). Almacena el grafo en modo local/offline; el código se parsea sin LLM.
 
 <!-- graphify-stats:start -->
-> Grafo actualizado automáticamente por Git hooks (tools/refresh_graph_docs.py): **171 nodos · 303 aristas · 8 comunidades** · commit de extracción `fd9acf6e6`. Detalles vivos: `graphify-out/GRAPH_REPORT.md` y `graph_stats` (MCP).
+> Grafo actualizado automáticamente por Git hooks (tools/refresh_graph_docs.py): **300 nodos · 572 aristas · 12 comunidades** · commit de extracción `7a82f077d`. Detalles vivos: `graphify-out/GRAPH_REPORT.md` y `graph_stats` (MCP).
 <!-- graphify-stats:end -->
 
 ### Configuración actual
