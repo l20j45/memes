@@ -415,7 +415,7 @@ function draw(exp = false) {
     cx.restore();
   }
 
-  if (!exp && state.cropOn && state.selK === 'img') {
+  if (!exp && state.cropOn && state.imgs[state.isel]) {
     drawCropOverlay(W);
   }
 
@@ -640,6 +640,18 @@ function drawCropOverlay(W) {
     cx.lineTo(cr.x + cr.w, cr.y + cr.h * i / 3);
   }
   cx.stroke();
+
+  // pista de uso flotante sobre el marco
+  cx.font = `700 ${Math.max(12, Math.round(W / 45))}px 'Space Grotesk',sans-serif`;
+  cx.textAlign = 'center';
+  cx.textBaseline = 'middle';
+  const hint = 'Arrastra bordes o tiradores · dentro: mover el marco · fuera: marco nuevo';
+  const hy2 = Math.max(u * 9, cr.y - hs * 2);
+  cx.fillStyle = 'rgba(8, 10, 18, .72)';
+  const hw = hint.length * W / 105;
+  cx.fillRect(cr.x + cr.w / 2 - hw / 2, hy2 - hs, hw, hs * 2);
+  cx.fillStyle = '#fbbf24';
+  cx.fillText(hint, cr.x + cr.w / 2, hy2);
   cx.restore();
 }
 
@@ -649,13 +661,16 @@ function startCropMode() {
     toast('Sube una imagen para recortar.', true);
     return;
   }
+  // imprescindible: tras la PRIMERA imagen la seleccion es 'txt' y el modo
+  // recorte no dibujaba el marco (bug reportado). Forzar la seleccion.
+  state.selK = 'img';
   state.cropOn = true;
   state.cropRect = { x: 0, y: 0, w: 1, h: 1 };
   if (state.cleanOn) {
     state.cleanOn = false;
     $('#cleanOn').checked = false;
   }
-  toast('Modo recorte: ajusta el marco y pulsa "Aplicar recorte".');
+  toast('Marca el área a CONSERVAR (o arrastra los bordes) y "Aplicar recorte".');
   sync();
   schedule();
 }
@@ -665,6 +680,28 @@ function cancelCrop() {
   state.cropRect = null;
   sync();
   schedule();
+}
+
+// Hit-test generoso del marco de recorte: primero los tiradores (radio
+// mayor que getHandle) y luego FRANJAS de borde: pasar cerca de un borde
+// del marco es igual a arrastrar el tirador correspondiente.
+function cropHit(p, b, k) {
+  const hs = 22 * k;
+  const hp = (x, y) => Math.hypot(p.x - x, p.y - y) < hs;
+  if (hp(b.x, b.y)) return 'tl';
+  if (hp(b.x + b.w, b.y)) return 'tr';
+  if (hp(b.x, b.y + b.h)) return 'bl';
+  if (hp(b.x + b.w, b.y + b.h)) return 'br';
+  if (hp(b.x + b.w / 2, b.y)) return 't';
+  if (hp(b.x + b.w / 2, b.y + b.h)) return 'b';
+  if (hp(b.x, b.y + b.h / 2)) return 'l';
+  if (hp(b.x + b.w, b.y + b.h / 2)) return 'r';
+  const band = 16 * k;
+  if (Math.abs(p.x - b.x) < band && p.y >= b.y - band && p.y <= b.y + b.h + band) return 'l';
+  if (Math.abs(p.x - (b.x + b.w)) < band && p.y >= b.y - band && p.y <= b.y + b.h + band) return 'r';
+  if (Math.abs(p.y - b.y) < band && p.x >= b.x - band && p.x <= b.x + b.w + band) return 't';
+  if (Math.abs(p.y - (b.y + b.h)) < band && p.x >= b.x - band && p.x <= b.x + b.w + band) return 'b';
+  return null;
 }
 
 function applyCrop() {
@@ -1760,10 +1797,10 @@ function initEvents() {
     const pad = 14;
 
     // modo recorte: tiene prioridad sobre todo lo demas
-    const cropM = state.cropOn && state.selK === 'img' && state.imgs[state.isel];
+    const cropM = state.cropOn && state.imgs[state.isel];
     if (cropM && cropM.box) {
       const cr = cropScreenRect(cropM);
-      const mode = getHandle(p, cr, k);
+      const mode = cropHit(p, cr, k);
       if (mode) {
         state.drag = { m: 'crop-' + mode, r0: { ...state.cropRect }, bx: cropM.box.x, by: cropM.box.y, bw: cropM.box.w, bhh: cropM.box.h };
         cv.setPointerCapture(e.pointerId);
@@ -1776,7 +1813,18 @@ function initEvents() {
         schedule();
         return;
       }
-      return; // click fuera del marco: ignorar en modo recorte
+      // click en la capa PERO fuera del marco: marquee (nuevo marco arrastrando)
+      const b = cropM.box;
+      if (p.x >= b.x && p.x <= b.x + b.w && p.y >= b.y && p.y <= b.y + b.h) {
+        const fx = clamp((p.x - b.x) / b.w, 0, 1);
+        const fy = clamp((p.y - b.y) / b.h, 0, 1);
+        state.cropRect = { x: fx, y: fy, w: 0, h: 0 };
+        state.drag = { m: 'crop-new', anchorX: fx, anchorY: fy, bx: b.x, by: b.y, bw: b.w, bhh: b.h };
+        cv.setPointerCapture(e.pointerId);
+        schedule();
+        return;
+      }
+      return; // click fuera de la capa: ignorar en modo recorte
     }
 
     if (state.cleanOn && state.imgs[state.isel] && state.imgs[state.isel].box) {
@@ -1870,15 +1918,15 @@ function initEvents() {
       return;
     }
 
-    if (!state.drag && state.cropOn && state.selK === 'img' && state.imgs[state.isel] && state.imgs[state.isel].box) {
+    if (!state.drag && state.cropOn && state.imgs[state.isel] && state.imgs[state.isel].box) {
       const cr = cropScreenRect(state.imgs[state.isel]);
-      const mode = getHandle(p, cr, W / 700);
+      const mode = cropHit(p, cr, W / 700);
       if (mode === 'br' || mode === 'tl') cv.style.cursor = 'nwse-resize';
       else if (mode === 'bl' || mode === 'tr') cv.style.cursor = 'nesw-resize';
       else if (mode === 't' || mode === 'b') cv.style.cursor = 'ns-resize';
       else if (mode === 'l' || mode === 'r') cv.style.cursor = 'ew-resize';
       else if (p.x >= cr.x && p.x <= cr.x + cr.w && p.y >= cr.y && p.y <= cr.y + cr.h) cv.style.cursor = 'move';
-      else cv.style.cursor = 'default';
+      else cv.style.cursor = 'crosshair';
       return;
     }
 
@@ -1911,6 +1959,16 @@ function initEvents() {
           y: clamp(fy0 + (p.y - d.startY) / d.bhh, 0, 1 - r.h),
           w: r.w,
           h: r.h
+        };
+      } else if (d.m === 'crop-new') {
+        // marquee: el marco nuevo crece desde el punto de click (1er punto = ancla)
+        const fx = clamp((p.x - d.bx) / d.bw, 0, 1);
+        const fy = clamp((p.y - d.by) / d.bhh, 0, 1);
+        state.cropRect = {
+          x: Math.min(d.anchorX, fx),
+          y: Math.min(d.anchorY, fy),
+          w: Math.abs(fx - d.anchorX),
+          h: Math.abs(fy - d.anchorY)
         };
       } else {
         const hasX0 = d.m.endsWith('tl') || d.m.endsWith('bl') || d.m.endsWith('l');
@@ -1972,6 +2030,10 @@ function initEvents() {
     cv.addEventListener(eventName, () => {
       if (state.drag) {
         const paint = state.drag.m === 'paint';
+        // marquee accidental (click sin movimiento): volver al marco completo
+        if (state.drag.m === 'crop-new' && state.cropRect && (state.cropRect.w < .02 || state.cropRect.h < .02)) {
+          state.cropRect = { x: 0, y: 0, w: 1, h: 1 };
+        }
         state.drag = null;
         if (!paint) pushHistory();
       }
