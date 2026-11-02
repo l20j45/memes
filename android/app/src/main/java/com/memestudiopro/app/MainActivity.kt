@@ -1,17 +1,24 @@
 package com.memestudiopro.app
 
 import android.annotation.SuppressLint
+import android.content.ActivityNotFoundException
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.ContentValues
 import android.content.Context
+import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.MediaStore
 import android.util.Base64
 import android.webkit.JavascriptInterface
+import android.webkit.ValueCallback
+import android.webkit.WebChromeClient
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.FileProvider
 import java.io.File
 
 /**
@@ -24,6 +31,9 @@ import java.io.File
 class MainActivity : AppCompatActivity() {
 
     private lateinit var webView: WebView
+    private var uploadCallback: ValueCallback<Array<Uri>>? = null
+
+    companion object { private const val RC_FILE_CHOOSER = 1001 }
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -44,10 +54,52 @@ class MainActivity : AppCompatActivity() {
         }
         webView.setBackgroundColor(0xFF0B1020.toInt())
         webView.webViewClient = WebViewClient()
+        // imprescindible: sin WebChromeClient.onShowFileChooser el WebView
+        // IGNORA los <input type="file"> y los botones "Subir imagen" y el
+        // logo de la marca de agua quedan muertos (bug reportado).
+        webView.webChromeClient = object : WebChromeClient() {
+            override fun onShowFileChooser(
+                view: WebView,
+                callback: ValueCallback<Array<Uri>>,
+                params: FileChooserParams
+            ): Boolean {
+                uploadCallback?.onReceiveValue(null)      // cancela un picker previo
+                uploadCallback = callback
+                val accept = params.acceptTypes?.filter { it.isNotBlank() } ?: emptyList()
+                val intent = Intent(Intent.ACTION_GET_CONTENT).apply {
+                    addCategory(Intent.CATEGORY_OPENABLE)
+                    type = if (accept.isEmpty()) "*/*" else accept.first()
+                    if (accept.size > 1) putExtra(Intent.EXTRA_MIME_TYPES, accept.toTypedArray())
+                }
+                return try {
+                    startActivityForResult(
+                        Intent.createChooser(intent, "Selecciona una imagen"),
+                        RC_FILE_CHOOSER
+                    )
+                    true
+                } catch (e: ActivityNotFoundException) {
+                    uploadCallback = null
+                    callback.onReceiveValue(null)
+                    false
+                }
+            }
+        }
         webView.addJavascriptInterface(ImageSaverBridge(this), "AndroidSaver")
         webView.loadUrl("file:///android_asset/memegnerator.html")
 
         setContentView(webView)
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        if (requestCode == RC_FILE_CHOOSER) {
+            val callback = uploadCallback
+            uploadCallback = null
+            callback?.onReceiveValue(
+                WebChromeClient.FileChooserParams.parseResult(resultCode, data)
+            )
+        } else {
+            super.onActivityResult(requestCode, resultCode, data)
+        }
     }
 
     @Deprecated("Deprecated in Java")
@@ -79,8 +131,73 @@ class ImageSaverBridge(private val context: Context) {
         }
     }
 
-    private fun saveToGallery(bytes: ByteArray, filename: String) {
-        val mime = when {
+    /**
+     * Copia INTEGRA el meme (PNG dataURL) al portapapeles del sistema con su
+     * URI FileProvider: otras apps (WhatsApp, Telegram...) pueden pegarla.
+     * Necesario porque en la WebView sobre file:// no existe
+     * navigator.clipboard (origen no seguro).
+     */
+    @JavascriptInterface
+    fun copyImage(dataUrl: String): String {
+        return try {
+            if (!dataUrl.startsWith("data:image/")) return "No es una imagen"
+            val base64 = dataUrl.substringAfter(",", "")
+            if (base64.isEmpty()) return "DataURL vacio"
+            val bytes = Base64.decode(base64, Base64.DEFAULT)
+            val mime = dataUrl.substringAfter("data:", "").substringBefore(";")
+            val ext = when {
+                mime.contains("jpeg") -> "jpg"
+                mime.contains("webp") -> "webp"
+                else -> "png"
+            }
+            val dir = File(context.cacheDir, "meme")
+            if (!dir.exists()) dir.mkdirs()
+            val file = File(dir, "clipboard.$ext")
+            file.writeBytes(bytes)
+            val uri = FileProvider.getUriForFile(
+                context,
+                context.packageName + ".fileprovider",
+                file
+            )
+            val clip = ClipData.newUri(context.contentResolver, "Meme Studio Pro", uri)
+            val cm = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+            cm.setPrimaryClip(clip)
+            "ok"
+        } catch (e: Exception) {
+            e.message ?: e.javaClass.simpleName
+        }
+    }
+
+    /**
+     * Lee el portapapeles del sistema y devuelve data:image/...;base64,... si
+     * hay una imagen (o "" si no) — sustituye a navigator.clipboard.read()
+     * (inexistente sobre file://) para el boton Pegar.
+     */
+    @JavascriptInterface
+    fun readImage(): String {
+        return try {
+            val cm = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+            val clip = cm.primaryClip ?: return ""
+            for (i in 0 until clip.itemCount) {
+                val item = clip.getItemAt(i)
+                // 1) texto con dataURL (algunas apps copian asi)
+                val text = item.text?.toString()
+                if (text != null && text.startsWith("data:image/")) return text
+                // 2) clip con URI de imagen (incluido el case nuestro FileProvider)
+                val uri = item.uri ?: continue
+                val mime = context.contentResolver.getType(uri) ?: continue
+                if (!mime.startsWith("image/")) continue
+                val bytes = context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
+                    ?: continue
+                return "data:$mime;base64," + Base64.encodeToString(bytes, Base64.DEFAULT)
+            }
+            ""
+        } catch (e: Exception) {
+            ""
+        }
+    }
+
+    private fun saveToGallery(bytes: ByteArray, filename: String) {        val mime = when {
             filename.endsWith(".jpg", true) || filename.endsWith(".jpeg", true) -> "image/jpeg"
             filename.endsWith(".webp", true) -> "image/webp"
             else -> "image/png"
