@@ -18,7 +18,9 @@ export const PRESETS = {
 };
 
 export const EXPORT_PRESETS = {
-  original: { label: 'Original', w: 900, h: 900 },
+  // 'original' SIN w/h fijos: render() lo resuelve con las dimensiones
+  // reales del lienzo (state.art) — preservar el aspecto SIEMPRE.
+  original: { label: 'Original' },
   '1080x1080': { label: '1080 × 1080', w: 1080, h: 1080 },
   '1200x1200': { label: '1200 × 1200', w: 1200, h: 1200 },
   '1080x1920': { label: '1080 × 1920', w: 1080, h: 1920 },
