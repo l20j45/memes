@@ -5,7 +5,9 @@
       "graphify": {
         "type": "local",
         "command": [
-          "graphify-mcp",
+          "/Users/danielr/.local/share/uv/tools/graphifyy/bin/python",
+          "-m",
+          "graphify.serve",
           "graphify-out/graph.json"
         ]
       }
