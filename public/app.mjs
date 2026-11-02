@@ -1,6 +1,8 @@
 /* Núcleo de la app (orquestador): importa el dominio/adaptadores de web/ y
    mantiene la UI: eventos, canvas, historial, autosave, plantillas, drafts.
-   La extracción hexagonal por fases mantiene un solo entrypoint ESM. */
+   La extracción hexagonal por fases mantiene un solo entrypoint ESM.
+   Cache-busting: el ?v=N de este archivo sube solo cuando cambia en un
+   commit, vía tools/bump_version.py (hook post-commit). */
 import { $, toast } from './web/dom.js';
 import { MAX, FONTS, PRESETS, EXPORT_PRESETS } from './web/presets.js';
 import { state, mk } from './web/state.js';
