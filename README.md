@@ -2,6 +2,12 @@
 
 > Generador y editor profesional de memes en el navegador con soporte para capas múltiples, eliminación inteligente de fondo mediante IA (Rembg / U2-Net), restaurador/inpainting de imágenes, tipografías clásicas y modernas, marcas de agua personalizadas y exportación de alta fidelidad.
 
+| Editor (escritorio) | Con un meme cargado |
+|:---:|:---:|
+| ![Editor de Meme Studio Pro en escritorio](docs/screenshot-editor.png) | ![Meme cargado con capas de texto](docs/screenshot-meme.png) |
+| Vista móvil (misma app, responsiva) | |
+| ![Vista móvil del editor](docs/screenshot-movil.png) | |
+
 ---
 
 ## 📋 Índice
@@ -15,6 +21,7 @@
   - [1. Backend de Inteligencia Artificial (Python FastAPI)](#1-backend-de-inteligencia-artificial-python-fastapi)
   - [2. Frontend Web (Navegador)](#2-frontend-web-navegador)
   - [3. Script CLI Independiente](#3-script-cli-independiente)
+- [Instalar como App (PWA)](#-instalar-como-app-pwa)
 - [Guía de Uso y Atajos](#-guía-de-uso-y-atajos)
 - [API del Backend](#-api-del-backend)
 - [Documentación y Contexto para Agentes de IA](#-documentación-y-contexto-para-agentes-de-ia)
@@ -258,6 +265,17 @@ El repo incluye un proyecto Android nativo (`android/`, WebView Kotlin) que empa
 
 ---
 
+## 📲 Instalar como App (PWA)
+
+La app es una **PWA instalable**: desde Chrome o Edge (escritorio o móvil, `http://localhost:5005` en el PC o `http://IP-del-PC:5005` en la LAN) usa el icono/botón **«Instalar app»** y quedarás con tu propio icono, ventana propia y la interfaz **en caché offline**.
+
+- **Service worker** (`sw.js`): cachea la interfaz (estáticos y fuentes); las llamadas a `/api/*` siempre van a la red (la IA necesita el servidor).
+- Los assets cacheados se invalidan solos al subir el `?v=N` del HTML.
+- En la app Android APK esto no aplica: la WebView ya instala la interfaz como assets (`file://`), sin service worker.
+- **Deep-link para compartir un borrador:** `http://localhost:5005/?img=<url-de-imagen>&t1=<texto superior>&t2=<texto inferior>` abre el editor con la imagen y los dos textos precargados.
+
+---
+
 ## ⌨️ Guía de Uso y Atajos
 
 | Atajo de Teclado | Acción |
@@ -274,6 +292,9 @@ El repo incluye un proyecto Android nativo (`android/`, WebView Kotlin) que empa
 - **4 Esquinas:** Escala uniforme proporcional.
 - **4 Bordes laterales/verticales:** Estiramiento individual de ancho o alto.
 - **Modo Limpiar (Borrador):** Pinta con el pincel sobre marcas de agua o texto no deseado y presiona **«Borrar lo pintado»**.
+
+### Autoguardado:
+- Cada acción (arrastrar, pintar, cambiar textos/estilos…) escribe el borrador en `localStorage` ~1.2s después de parar de interactuar, además de al minimizar o cerrar la pestaña. Al reabrir, el borrador se restaura solo.
 
 ---
 

@@ -29,6 +29,10 @@ Este documento describe la arquitectura, flujo de datos, convenciones y peculiar
 | `android/` | App Android (APK): WebView Kotlin que empaqueta el frontend web como assets (una sola base de código, sin port RN/Flutter). Ver `android/README_ANDROID.md`. |
 | `android/app/src/main/java/.../MainActivity.kt` | WebView con ES modules sobre `file://` (flags de acceso a archivos) + bridge `window.AndroidSaver.saveImage(dataUrl, filename)` que guarda en la galería via MediaStore. |
 | `android/app/src/main/assets/` | Copia del frontend: re-sincronizar con `Copy-Item memegnerator.html, app.mjs, styles.css, index.html android\app\src\main\assets\ -Force` tras cada cambio web (y subir `?v=N`). |
+| `manifest.json` | Manifest PWA: `start_url: "./"`, `display: standalone`, iconos 192/512 + maskable. Servido por StaticFiles (`/manifest.json`). |
+| `sw.js` | Service worker mínimo: cache-first para estáticos (los `?v=N` invalidan solos), network-first para `/api/*`. Solo se registra en HTTP(S) (no en `file://` del Android). |
+| `icon-192.png` / `icon-512.png` / `apple-touch-icon.png` | Iconos PWA (mismo estilo del favicon: PNG generado). |
+| `docs/` | Capturas del editor (`screenshot-*.png`) incrustadas en el README. |
 | `tools/remove_bg.py` | Script de línea de comandos para quitar fondos a imágenes individuales. |
 | `tools/remove_bg.bat` | Script batch para invocar `tools/remove_bg.py` en entornos Windows. |
 | `tools/refresh_graph_docs.py` | Hook helper: sincroniza el bloque de estadísticas de Graphify en `AGENTS.md` con `graphify-out/graph.json` tras cada commit/cambio de rama. |
@@ -56,7 +60,7 @@ El estado de la aplicación reside en el objeto singleton `state`:
 
 1. **Servidor HTTP obligatorio (no `file://`); despliegue en Docker:**
    - La aplicación no debe probarse abriendo directamente el HTML con el protocolo `file://`, ya que los navegadores bloquean la importación de `<script type="module" src="./app.mjs">`. Debe ejecutarse como una única app vía `python server.py`, que sirve el frontend y la API integrados en FastAPI (puerto 5005).
-   - **El despliegue previsto es en contenedor Docker**: `docker compose up -d --build` (ver `Dockerfile` y `docker-compose.yml`). El Dockerfile copia solo `server.py`, `memegnerator.html`, `app.mjs`, `styles.css` y `requirements.txt`; si se añade un nuevo archivo de frontend hay que incluirlo en el `COPY` (o relajar el `.dockerignore`).
+   - **El despliegue previsto es en contenedor Docker**: `docker compose up -d --build` (ver `Dockerfile` y `docker-compose.yml`). El Dockerfile copia solo `server.py`, `memegnerator.html`, `app.mjs`, `styles.css`, `favicon.png` y los archivos de la PWA (`manifest.json`, `sw.js`, `icon-192.png`, `icon-512.png`, `apple-touch-icon.png`); si se añade un nuevo archivo de frontend hay que incluirlo en el `COPY` (o relajar el `.dockerignore`).
    - Dentro del contenedor la detección ARM sigue funcionando (`platform.machine()` no se virtualiza en Docker sin emulación); el caché de modelos debe persistirse con el volumen `models` (montado en `/root/.u2net` y `/root/.rembg`) o cada reinicio re-descargará los pesos.
 
 2. **Canvas y CORS (Tainted Canvas):**
