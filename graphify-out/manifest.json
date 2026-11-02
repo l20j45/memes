@@ -1,21 +1,21 @@
 {
   "app.mjs": {
-    "mtime": 1793597020.4631085,
-    "seen": 1793597759.3281229,
-    "ast_hash": "4b4596b4c83c6b1d5a8cfaa4d46a0b74",
+    "mtime": 1793599855.077918,
+    "seen": 1793600318.3811083,
+    "ast_hash": "c4a6e381588dd367ecbc48bc05f4684b",
     "semantic_hash": ""
   },
   "server.py": {
-    "mtime": 1793597425.8513608,
-    "seen": 1793597759.3281395,
-    "ast_hash": "edf6d5711fd75ac948f3122734d19b85",
+    "mtime": 1793600156.405972,
+    "seen": 1793600318.381118,
+    "ast_hash": "79cf5871ba93662cf4be7fcd987b67d6",
     "semantic_hash": ""
   },
   "tools/remove_bg.py": {
-    "mtime": 1793474805.2699666,
-    "seen": 1793593432.5495603,
-    "ast_hash": "aa26c7d8701f32e2e62cdafe341a71a7",
-    "semantic_hash": "aa26c7d8701f32e2e62cdafe341a71a7"
+    "mtime": 1793598198.6559062,
+    "seen": 1793600318.3811233,
+    "ast_hash": "e0ec76dea8436ee5664a008bb26696dd",
+    "semantic_hash": ""
   },
   "opencode.json": {
     "mtime": 1793597429.2227495,
@@ -24,15 +24,15 @@
     "semantic_hash": ""
   },
   "AGENTS.md": {
-    "mtime": 1793597773.577716,
-    "seen": 1793597786.8812366,
-    "ast_hash": "459c68826fbabb20fc2dcba2795ecf0f",
+    "mtime": 1793600327.1170743,
+    "seen": 1793600330.1429713,
+    "ast_hash": "1bb10ca3b21338b56125b6695884ac00",
     "semantic_hash": ""
   },
   "README.md": {
-    "mtime": 1793597672.0197463,
-    "seen": 1793597759.3281546,
-    "ast_hash": "71d6f76fb5824efbd07945d857185648",
+    "mtime": 1793600206.1124334,
+    "seen": 1793600318.3811269,
+    "ast_hash": "a3e330714b914b71218645b83683af7b",
     "semantic_hash": ""
   },
   "index.html": {
@@ -42,9 +42,9 @@
     "semantic_hash": ""
   },
   "memegnerator.html": {
-    "mtime": 1793597028.0347662,
-    "seen": 1793597759.328161,
-    "ast_hash": "9b4d2c842b4219caf725c1e423684a06",
+    "mtime": 1793599858.724314,
+    "seen": 1793600318.3811355,
+    "ast_hash": "55af825eaf4beb8322b3f574c8aaff33",
     "semantic_hash": ""
   },
   "requirements.txt": {
@@ -54,15 +54,69 @@
     "semantic_hash": ""
   },
   "docker-compose.yml": {
-    "mtime": 1793597653.581905,
-    "seen": 1793597759.3281314,
-    "ast_hash": "2ba41a163ac4dc65bf00641354856c3e",
+    "mtime": 1793600121.1417954,
+    "seen": 1793600318.3811111,
+    "ast_hash": "476c43f274985d61306fa03c9a733c29",
     "semantic_hash": ""
   },
   "tools/refresh_graph_docs.py": {
     "mtime": 1793594057.567411,
     "seen": 1793597759.3281422,
     "ast_hash": "bdfa086fd27b66ff79f1d7c6d32cf939",
+    "semantic_hash": ""
+  },
+  "android/app/build.gradle": {
+    "mtime": 1793599866.4922931,
+    "seen": 1793600318.3810894,
+    "ast_hash": "dc50b01561e78ba68d0ea33b7a4bb6f1",
+    "semantic_hash": ""
+  },
+  "android/app/src/main/assets/app.mjs": {
+    "mtime": 1793599855.077918,
+    "seen": 1793600318.381097,
+    "ast_hash": "c4a6e381588dd367ecbc48bc05f4684b",
+    "semantic_hash": ""
+  },
+  "android/app/src/main/java/com/memestudiopro/app/MainActivity.kt": {
+    "mtime": 1793599891.124151,
+    "seen": 1793600318.3811007,
+    "ast_hash": "4e323d683ef26c04a83a4c6df42633c0",
+    "semantic_hash": ""
+  },
+  "android/build.gradle": {
+    "mtime": 1793599866.4872754,
+    "seen": 1793600318.3811026,
+    "ast_hash": "e6c668c1daecc97a9f8c2be8a0967a42",
+    "semantic_hash": ""
+  },
+  "android/settings.gradle": {
+    "mtime": 1793599858.7258193,
+    "seen": 1793600318.3811045,
+    "ast_hash": "68e1a183bb80fbdb190d4232822723b5",
+    "semantic_hash": ""
+  },
+  "android/README_ANDROID.md": {
+    "mtime": 1793599940.56813,
+    "seen": 1793600318.3811285,
+    "ast_hash": "cf4404196d8425a93a2f3561b8b867c9",
+    "semantic_hash": ""
+  },
+  "android/app/src/main/assets/index.html": {
+    "mtime": 1793474702.1281745,
+    "seen": 1793600318.38113,
+    "ast_hash": "3db81f8a180278ba882ed0b934608a93",
+    "semantic_hash": ""
+  },
+  "android/app/src/main/assets/memegnerator.html": {
+    "mtime": 1793599858.724314,
+    "seen": 1793600318.3811314,
+    "ast_hash": "55af825eaf4beb8322b3f574c8aaff33",
+    "semantic_hash": ""
+  },
+  "android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png": {
+    "mtime": 1793599912.3410144,
+    "seen": 1793600318.3811395,
+    "ast_hash": "57250e0bed82efb98be932023593de52",
     "semantic_hash": ""
   }
 }

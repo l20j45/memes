@@ -99,6 +99,11 @@ memes/
 │   ├── remove_bg.bat           # Wrapper por lotes para ejecución rápida en Windows
 │   └── refresh_graph_docs.py   # Hook helper: sincroniza estadísticas del grafo en AGENTS.md
 ├── graphify-out/               # Grafo de conocimiento (Graphify): graph.json + GRAPH_REPORT.md
+├── android/                    # App Android (APK): WebView Kotlin que reutiliza el frontend web
+│   ├── app/                    # Proyecto Gradle (build.gradle, manifest, MainActivity.kt, assets/)
+│   └── README_ANDROID.md       # Instrucciones de compilación del APK y límites del móvil
+├── Dockerfile                  # Imagen multi-arch (x86/ARM) del stack completo
+├── docker-compose.yml          # Orquestación con volumen de modelos y healthcheck
 ├── .gitignore                  # Archivos y carpetas excluidos del control de versiones
 ├── AGENTS.md                   # Contexto técnico y directrices para agentes de IA
 └── README.md                   # Esta documentación
@@ -145,8 +150,14 @@ pip install -r requirements.txt
 **Toda la aplicación se ejecuta desde un contenedor Docker.** No necesita entorno virtual ni dependencias locales: solo Docker (o Docker Engine + el plugin de compose en Raspberry Pi).
 
 ```bash
+# Configuración (opcional): copia la plantilla y edita a gusto
+cp .env.example .env
+
 # Arrancar (construye la imagen la primera vez)
 docker compose up -d --build
+```
+
+**Toda la configuración va en `.env`**: modelo rembg, puerto publicado, CORS, subreddits de memes, TTL de cachés… (ver [`/.env.example`](.env.example)). `docker compose` lee el `.env` de la raíz e inyecta los valores al contenedor; sin `.env` usa los valores por defecto.
 
 # Ver logs
 docker compose logs -f memestudio
@@ -180,6 +191,9 @@ $env:REMBG_MODEL="u2netp"; docker compose up -d --build
 ---
 
 ### 2. Servidor Local sin Docker (desarrollo)
+
+> [!NOTE]
+> `python server.py` también lee el mismo `.env` de la raíz (PORT, HOST, REMBG_MODEL, REDDIT_SUBS, MEME_CACHE_TTL, IMG_CACHE_MAX, CORS_ORIGINS). Con `.env` present, cambia puerto/host/modelo sin tocar código.
 
 > **Modo todo-en-uno:** [`server.py`](server.py) sirve tanto la API de eliminación de fondos con IA como la aplicación web del frontend de forma integrada en un solo comando:
 
@@ -238,6 +252,12 @@ El backend detecta la arquitectura de la máquina al arrancar:
 
 ---
 
+### 6. App Android (APK)
+
+El repo incluye un proyecto Android nativo (`android/`, WebView Kotlin) que empaqueta el editor tal cual y guarda los exportes en la **galería del móvil**. Compílalo con Android Studio (`File > Open` sobre `android/` → `Build APK(s)`); instrucciones completas, límites del móvil y el modo de conectar el backend rembg vía "Servidor IA" están en [`android/README_ANDROID.md`](android/README_ANDROID.md).
+
+---
+
 ## ⌨️ Guía de Uso y Atajos
 
 | Atajo de Teclado | Acción |
@@ -264,10 +284,26 @@ Verifica la disponibilidad del servicio.
 - **Respuesta:** `{"status": "ok"}`
 
 ### `POST /api/remove-bg`
-Recibe una imagen y devuelve la imagen procesada en formato PNG con fondo transparente.
+Recibe una imagen y devuelve la imagen procesada en formato PNG con fondo transparente y **auto-recortada al sujeto** (se elimina el área 100% transparente sobrante).
 - **Content-Type:** `multipart/form-data`
 - **Body:** `image: <archivo binario>`
-- **Respuesta:** Stream de imagen binaria `image/png`.
+- **Respuesta:** Stream de imagen binaria `image/png` (dimensiones = sujeto + margen anti-aliasing).
+- **Cabecera `X-Crop-Box:`** `left,top,ancho_original,alto_original` — región del original que sobrevive al recorte, para reposicionar la capa en clientes integrados (el frontend de la app la usa para mantener el sujeto en su sitio exacto).
+
+### `GET /api/meme-search`
+Búsqueda de plantillas virales con **matching difuso** sobre el top-100 de Imgflip: normaliza acentos ("camion" encuentra variantes con tilde), tolera tipeos cercanos (`difflib`) y pondera por palabras. Sin término devuelve una muestra aleatoria del catálogo. El catálogo se cachea 5 minutos en el servidor para no castigar la API de Imgflip.
+- **Query:** `q=<texto>` (opcional), `limit=<n>` (max 24, por defecto 24)
+- **Respuesta:** `{"data":{"memes":[{"name","url","width","height"}]}}` — cada `url` es una **ruta de este mismo servidor** (proxy), ver siguiente endpoint.
+
+### `GET /api/meme-image`
+Proxy de la imagen del meme servida desde este servidor en lugar de `i.imgflip.com`, para que el canvas del navegador nunca quedara contaminado (*tainted*) y la exportación a PNG/WebP siempre funcione.
+- **Query:** `src=<url de imgflip>` (solo dominios `*.imgflip.com` — rechaza lo demás con 400)
+- **Respuesta:** bytes de la imagen con su `Content-Type` correcto (JPEG/PNG/GIF/WEBP); cache simple en memoria.
+
+### `GET /api/meme-search-reddit`
+Búsqueda de memes en Reddit vía el archivo público de Arctic Shift (sin clave de API; la red JSON de reddit.com suele estar bloqueada). Con término: busca por título en varios subreddits de memes (r/dankmemes, r/me_ira, …); sin término: muestra aleatoria de memes populares. Filtra NSFW, tiene caché 5 min y pacing anti-429.
+- **Query:** `q=<texto>` (opcional), `limit=<n>` (max 24)
+- **Respuesta:** mismo shape que `/api/meme-search`; las `url` van por `/api/meme-image` (dominios permitidos: imgflip, redd.it, imgur).
 
 ---
 

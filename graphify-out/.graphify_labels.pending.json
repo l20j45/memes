@@ -2,9 +2,13 @@
   "0": "server.py",
   "1": "app.mjs",
   "2": "Meme Studio Pro 🎭",
-  "3": "initEvents",
-  "4": "toast",
+  "3": "assets/app.mjs",
+  "4": "MainActivity.kt",
   "5": "Meme Studio Pro - Directrices y Contexto para Agentes (AGENTS.md)",
   "6": "memestudio",
-  "7": "refresh_graph_docs.py"
+  "7": "refresh_graph_docs.py",
+  "8": "Meme Studio Pro — Aplicación Android (APK)",
+  "9": "app/build.gradle",
+  "10": "android/build.gradle",
+  "11": "settings.gradle"
 }
