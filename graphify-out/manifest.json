@@ -1,0 +1,68 @@
+{
+  "app.mjs": {
+    "mtime": 1793597020.4631085,
+    "seen": 1793597759.3281229,
+    "ast_hash": "4b4596b4c83c6b1d5a8cfaa4d46a0b74",
+    "semantic_hash": ""
+  },
+  "server.py": {
+    "mtime": 1793597425.8513608,
+    "seen": 1793597759.3281395,
+    "ast_hash": "edf6d5711fd75ac948f3122734d19b85",
+    "semantic_hash": ""
+  },
+  "tools/remove_bg.py": {
+    "mtime": 1793474805.2699666,
+    "seen": 1793593432.5495603,
+    "ast_hash": "aa26c7d8701f32e2e62cdafe341a71a7",
+    "semantic_hash": "aa26c7d8701f32e2e62cdafe341a71a7"
+  },
+  "opencode.json": {
+    "mtime": 1793597429.2227495,
+    "seen": 1793597759.3281362,
+    "ast_hash": "639e591e2c9f0a51fb5cff78dc56c1d2",
+    "semantic_hash": ""
+  },
+  "AGENTS.md": {
+    "mtime": 1793597767.9059048,
+    "seen": 1793597770.1936107,
+    "ast_hash": "da1bda07d0f5ecef1fe76ed64d688fd3",
+    "semantic_hash": ""
+  },
+  "README.md": {
+    "mtime": 1793597672.0197463,
+    "seen": 1793597759.3281546,
+    "ast_hash": "71d6f76fb5824efbd07945d857185648",
+    "semantic_hash": ""
+  },
+  "index.html": {
+    "mtime": 1793474702.1281745,
+    "seen": 1793593749.542398,
+    "ast_hash": "3db81f8a180278ba882ed0b934608a93",
+    "semantic_hash": ""
+  },
+  "memegnerator.html": {
+    "mtime": 1793597028.0347662,
+    "seen": 1793597759.328161,
+    "ast_hash": "9b4d2c842b4219caf725c1e423684a06",
+    "semantic_hash": ""
+  },
+  "requirements.txt": {
+    "mtime": 1793475292.2651143,
+    "seen": 1793593749.5424008,
+    "ast_hash": "dac505a57ea98db8f4d5f8e954f39303",
+    "semantic_hash": ""
+  },
+  "docker-compose.yml": {
+    "mtime": 1793597653.581905,
+    "seen": 1793597759.3281314,
+    "ast_hash": "2ba41a163ac4dc65bf00641354856c3e",
+    "semantic_hash": ""
+  },
+  "tools/refresh_graph_docs.py": {
+    "mtime": 1793594057.567411,
+    "seen": 1793597759.3281422,
+    "ast_hash": "bdfa086fd27b66ff79f1d7c6d32cf939",
+    "semantic_hash": ""
+  }
+}
