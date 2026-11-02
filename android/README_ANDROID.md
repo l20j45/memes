@@ -45,6 +45,36 @@ JAVA_HOME=~/jdks/jdk17/Contents/Home ANDROID_HOME=~/Library/Android/sdk \
 
 El output es el mismo: `app/build/outputs/apk/debug/app-debug.apk` (firmada con el debug keystore autogenerado: instalable activando "orígenes desconocidos").
 
+## APK de release firmada
+
+El `signingConfig` es **opcional y basado en archivos**: `android/app/build.gradle` carga `android/keystore/memestudio.properties` si existe (git-ignorado, junto con `memestudio.jks`; el `storeFile` es relativo a esa carpeta). Si existe → `app-release.apk` firmada; si no → unsigned para firmar a posteriori.
+
+```bash
+# Generar keystore una vez (no se commitea; CONSERVARLO para futuras updates)
+mkdir -p android/keystore
+PW=$(openssl rand -hex 12)
+~/jdks/jdk17/Contents/Home/bin/keytool -genkeypair -v \
+  -keystore android/keystore/memestudio.jks -alias memestudio \
+  -keyalg RSA -keysize 2048 -validity 10000 -storepass "$PW" -keypass "$PW" \
+  -dname "CN=Meme Studio Pro, OU=ReleaseKey, O=MemeStudioPro"
+cat > android/keystore/memestudio.properties <<EOF
+storeFile=memestudio.jks
+storePassword=$PW
+keyAlias=memestudio
+keyPassword=$PW
+EOF
+
+tools/build_apk.sh release      # → android/app/build/outputs/apk/release/app-release.apk
+
+# Verificar firma (apksigner necesita JAVA_HOME apuntando al JDK 17)
+JAVA_HOME=~/jdks/jdk17/Contents/Home \
+  ~/Library/Android/sdk/build-tools/*/apksigner verify --print-certs \
+  android/app/build/outputs/apk/release/app-release.apk
+```
+
+> [!WARNING]
+> **Backup del keystore obligatorio** (contraseña de `memestudio.properties` incluida): sin ese `.jks` NO se puede publicar ninguna actualización de la app — Android rechaza instalar una APK firmada con otro certificado *sobre* la existente (Android exige siempre la misma firma). Guárdalo además en un password manager o disco aparte y sube `versionCode` con cada release para que el móvil acepte actualizar.
+
 ## Qué funciona y qué no dentro del móvil
 
 | Función | ¿En Android? |
