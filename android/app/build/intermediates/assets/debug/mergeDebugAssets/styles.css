@@ -75,4 +75,6 @@ input[type=range]{width:100%;accent-color:var(--acc)}
 .auth-card .in{width:100%}
 .auth-error{margin:0;color:var(--err);font-size:12px;font-weight:600}
 .auth-card .btn{width:100%}
-@media (max-width:900px){main{grid-template-columns:1fr;padding:10px}.stage{top:0;z-index:5;background:var(--bg);padding:6px 0}.cvw{min-height:0;max-height:46vh;padding:6px}#cv{max-height:44vh}header{padding:10px}}
+@media (max-width:900px){main{grid-template-columns:1fr;padding:10px}.stage{top:0;z-index:5;background:var(--bg);padding:6px 0}.cvw{min-height:0;max-height:46vh;padding:6px}#cv{max-height:44vh}
+/* header: sin wrap el toolbar (Deshacer/Rehacer/Copiar/Descargar/Salir) desbordaba la barra disparando scroll horizontal (bug APK) */
+header{padding:10px;flex-wrap:wrap;gap:8px}h1{font-size:19px}.acts{flex-wrap:wrap;gap:6px;min-width:0}.acts .btn{font-size:12.5px;padding:5px 10px}body{overflow-x:hidden}}
