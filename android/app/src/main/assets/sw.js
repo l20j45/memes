@@ -1,19 +1,37 @@
 // Service worker mínimo de Meme Studio Pro: permite instalar la PWA
 // (Chrome/Edge) y cargar la interfaz offline. La API (/api/*) siempre va
 // a la red: la inferencia de IA no tiene sentido sin servidor.
-const CACHE = 'memestudio-v1';
+//
+// v2: los documentos app (HTML/CSS/JS) son network-first — si el navegador
+// online siempre tiene la version del servidor; el cache queda como fallback
+// offline. Cache-first solo para fuentes/iconos (contenido estable). Esto
+// evita que el SW sirva para siempre un HTML antiguo (bug del login: el
+// modal cacheado mostraba un modo registro desactualizado).
+const CACHE = 'memestudio-v2';
 const ASSETS = [
   './',
   './memegnerator.html',
   './styles.css',
-  './app.mjs',
   './favicon.png',
   './icons/icon-192.png',
   './icons/icon-512.png',
-  './icons/apple-touch-icon.png',
-  'https://fonts.googleapis.com/css2?family=Anton&family=Comic+Neue:wght@700&family=Montserrat:wght@800&family=Oswald:wght@700&family=Space+Grotesk:wght@500;700&display=swap',
+  './icons/apple-touch-icon.png'
+];
+const STABLE = [
+  'https://fonts.googleapis.com/',
   'https://fonts.gstatic.com/'
 ];
+
+const fetchAndCache = (request) => {
+  const network = fetch(request).then((response) => {
+    if (response && response.ok) {
+      const copy = response.clone();
+      caches.open(CACHE).then((cache) => cache.put(request, copy));
+    }
+    return response;
+  });
+  return network.catch(() => caches.match(request));
+};
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -43,18 +61,16 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Estáticos y fuentes: cache-first (si cambia el '?v=N' del HTML la URL ya
-  // es distinta y se re-descarga sola).
-  event.respondWith(
-    caches.match(event.request).then((cached) => {
-      const network = fetch(event.request).then((response) => {
-        if (response.ok) {
-          const copy = response.clone();
-          caches.open(CACHE).then((cache) => cache.put(event.request, copy));
-        }
-        return response;
-      });
-      return cached || network;
-    })
-  );
+  // Fuentes (origen externo): cache-first, no cambian nunca.
+  if (STABLE.some((base) => url.href.startsWith(base))) {
+    event.respondWith(
+      caches.match(event.request).then((cached) => cached || fetchAndCache(event.request))
+    );
+    return;
+  }
+
+  // Documentos app y assets del propio origen: network-first con fallback
+  // a cache para poder seguir usandolo sin conexion. El '?v=N' del HTML
+  // sigue rompiendo la URL del JS en cada version.
+  event.respondWith(fetchAndCache(event.request));
 });

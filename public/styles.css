@@ -32,6 +32,11 @@ section{background:linear-gradient(180deg,#121b2d,#101827);border:1px solid var(
 .accordion-item.is-collapsed .chev{transform:rotate(-90deg)}
 .chev{display:inline-block;transition:transform .2s ease;color:var(--mut)}
 label{display:flex;flex-direction:column;gap:3px;color:var(--mut);font-size:11px}
+
+/* El atributo hidden pierde contra cualquier regla de autor con display
+   (la hoja del UA no gana nunca). Guard global: labels como #authPass2Row
+   antes se veian siempre (bug del modal de login). */
+[hidden]{display:none!important}
 .row{display:flex;gap:6px;align-items:end}.row>*{flex:1}
 .quick-cats{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}.quick-cats .btn{width:100%}
 .in{width:100%;background:var(--soft);border:1px solid var(--line);border-radius:8px;padding:7px 9px;color:var(--ink)}
