@@ -6,12 +6,12 @@
 - Unclassified: 20 file(s) not represented in the graph (top: .xml 7, (none) 5, .css 2)
 
 ## Summary
-- 323 nodes · 596 edges · 13 communities (9 shown, 4 thin omitted)
+- 325 nodes · 598 edges · 13 communities (9 shown, 4 thin omitted)
 - Extraction: 99% EXTRACTED · 1% INFERRED · 0% AMBIGUOUS · INFERRED: 8 edges (avg confidence: 0.91)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `31c4b70a`
+- Built from commit: `8277ee7f`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -32,19 +32,19 @@
 2. `initEvents()` - 30 edges
 3. `schedule()` - 15 edges
 4. `schedule()` - 15 edges
-5. `toast()` - 14 edges
-6. `sync()` - 14 edges
-7. `toast()` - 14 edges
-8. `sync()` - 14 edges
+5. `sync()` - 14 edges
+6. `toast()` - 14 edges
+7. `sync()` - 14 edges
+8. `toast()` - 14 edges
 9. `pushHistory()` - 12 edges
 10. `pushHistory()` - 12 edges
 
 ## Surprising Connections (you probably didn't know these)
 - `Conectar un agente al grafo (resumen)` --references--> `graph_stats()`  [INFERRED]
   README.md → tools/refresh_graph_docs.py
-- `Conectarse al grafo por MCP (otros agentes y clientes)` --references--> `graph_stats()`  [INFERRED]
-  AGENTS.md → tools/refresh_graph_docs.py
 - `Herramientas MCP (prefijo `graphify_`)` --references--> `graph_stats()`  [INFERRED]
+  AGENTS.md → tools/refresh_graph_docs.py
+- `Conectarse al grafo por MCP (otros agentes y clientes)` --references--> `graph_stats()`  [INFERRED]
   AGENTS.md → tools/refresh_graph_docs.py
 - `📊 Graphify — Grafo de Conocimiento del Código (contexto primario)` --references--> `graph_stats()`  [INFERRED]
   AGENTS.md → tools/refresh_graph_docs.py
@@ -85,8 +85,8 @@ Cohesion: 0.14
 Nodes (11): CLI equivalente (útil para scripts), Conectarse al grafo por MCP (otros agentes y clientes), Configuración actual, 📊 Graphify — Grafo de Conocimiento del Código (contexto primario), Herramientas MCP (prefijo `graphify_`), Regla de uso para agentes, graph_stats(), main() (+3 more)
 
 ### Community 8 - "Parar"
-Cohesion: 0.11
-Nodes (18): 2. Servidor Local sin Docker (desarrollo), 3. Frontend Independiente (Obsoleto), 4. Script CLI Independiente, 5. Ejecución en Raspberry Pi (o ARM), 6. App Android (APK), 🔌 API del Backend, Automatización por hooks de Git, Conectar un agente al grafo (resumen) (+10 more)
+Cohesion: 0.10
+Nodes (20): 2. Servidor Local sin Docker (desarrollo), 3. Frontend Independiente (Obsoleto), 4. Script CLI Independiente, 5. Ejecución en Raspberry Pi (o ARM), 6. App Android (APK), 🔌 API del Backend, Autoguardado:, Automatización por hooks de Git (+12 more)
 
 ### Community 12 - "manifest.json"
 Cohesion: 0.17
@@ -99,11 +99,11 @@ Nodes (11): background_color, description, display, icons, lang, name, orientati
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `Parar` connect `Parar` to `server.py`, `Meme Studio Pro - Directrices y Contexto para Agentes (AGENTS.md)`?**
-  _High betweenness centrality (0.067) - this node is a cross-community bridge._
+  _High betweenness centrality (0.071) - this node is a cross-community bridge._
 - **Should `server.py` be split into smaller, more focused modules?**
   _Cohesion score 0.05272895467160037 - nodes in this community are weakly interconnected._
 - **Why does `🔍 Diagnóstico y Correcciones Recomendadas` connect `server.py` to `Parar`?**
-  _High betweenness centrality (0.046) - this node is a cross-community bridge._
+  _High betweenness centrality (0.048) - this node is a cross-community bridge._
 - **Should `app.mjs` be split into smaller, more focused modules?**
   _Cohesion score 0.07589984350547731 - nodes in this community are weakly interconnected._
 - **Should `Meme Studio Pro 🎭` be split into smaller, more focused modules?**
