@@ -10,6 +10,9 @@ env/
 # Lock del hook de rebuild de Graphify
 graphify-out/.rebuild.lock
 
+# Borradores remotos guardados por los usuarios (/api/draft)
+drafts/
+
 # Byte-compiled / cachés de Python
 __pycache__/
 *.py[cod]

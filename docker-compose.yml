@@ -23,12 +23,18 @@ services:
       - MAX_UPLOAD_MB=${MAX_UPLOAD_MB:-10}
       - MAX_REMOVAL_CONCURRENCY=${MAX_REMOVAL_CONCURRENCY:-2}
       - PREWARM_MODEL=${PREWARM_MODEL:-0}
+      # Acceso con contrasena + borradores remotos (ver .env.example)
+      - AUTH_USERS=${AUTH_USERS:-}
+      - DRAFT_DIR=/app/drafts
+      - DRAFT_MAX_MB=${DRAFT_MAX_MB:-25}
       # Dentro del contenedor el puerto/puerto base es siempre 5005
       - PORT=5005
     volumes:
       # Persistent rembg model cache (both possible locations it uses)
       - models:/root/.u2net
       - models:/root/.rembg
+      # Borradores remotos por usuario (sincronizacion movil <-> PC)
+      - drafts:/app/drafts
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://localhost:5005/health', timeout=3).read()"]
       interval: 30s
@@ -40,3 +46,4 @@ services:
 
 volumes:
   models:
+  drafts:

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import base64
 import difflib
 import html as _html
 import io
@@ -8,6 +9,7 @@ import os
 import platform
 import random
 import re
+import secrets
 import threading
 import time
 import unicodedata
@@ -16,9 +18,9 @@ import urllib.parse
 import urllib.request
 from pathlib import Path
 
-from fastapi import FastAPI, File, HTTPException, Response, UploadFile
+from fastapi import FastAPI, File, HTTPException, Request, Response, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, StreamingResponse
+from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from PIL import Image
 from rembg import remove
@@ -75,6 +77,51 @@ _MAX_REMOVAL_CONCURRENCY = int(os.environ.get("MAX_REMOVAL_CONCURRENCY", "2"))
 _PREWARM_MODEL = os.environ.get("PREWARM_MODEL", "").lower() in ("1", "true", "yes", "si", "sí")
 _removal_slots = threading.BoundedSemaphore(max(1, _MAX_REMOVAL_CONCURRENCY))
 
+# Acceso con usuario/contrasena (Basic Auth del navegador) y borradores remotos
+# (sincronizacion movil <-> PC):
+# - AUTH_USERS=daniel:mipass,ana:supass -> TODA la app pide login. Ideal al
+#   exponer el servidor fuera de casa (Cloudflare Tunnel); vacio = sin login
+#   (uso local/LAN, comportamiento igual que antes).
+# - Cada usuario autenticado guarda su PROPIO borrador en drafts/<usuario>.json
+#   con los botones "Subir borrador"/"Traer borrador" de la interfaz.
+_DRAFT_DIR = Path(os.environ.get("DRAFT_DIR") or (Path(__file__).parent / "drafts"))
+_DRAFT_MAX_MB = int(os.environ.get("DRAFT_MAX_MB", "25"))
+
+_WWW_AUTH = {"WWW-Authenticate": 'Basic realm="Meme Studio Pro"'}
+_AUTH_EXEMPT = ("/health", "/favicon.png")
+
+
+def _parse_auth_users(raw: str) -> dict:
+    users = {}
+    for pair in (raw or "").split(","):
+        user, _, pw = pair.partition(":")
+        if user.strip() and pw:
+            users[user.strip()] = pw
+    return users
+
+
+AUTH_USERS = _parse_auth_users(os.environ.get("AUTH_USERS", ""))
+
+
+def _check_auth(header: str | None) -> str:
+    """Devuelve el usuario autenticado, o None si la app corre sin contrasena."""
+    if not AUTH_USERS:
+        return ""
+    if not header or not header.lower().startswith("basic "):
+        raise HTTPException(status_code=401, detail="Login requerido", headers=_WWW_AUTH)
+    try:
+        user, _, pw = base64.b64decode(header.split(" ", 1)[1]).decode("utf-8").partition(":")
+    except Exception:
+        raise HTTPException(status_code=401, detail="Login invalido", headers=_WWW_AUTH)
+    expected = AUTH_USERS.get(user)
+    if expected and secrets.compare_digest(expected, pw):
+        return user
+    raise HTTPException(status_code=401, detail="Usuario o contrasena incorrectos", headers=_WWW_AUTH)
+
+
+def _draft_slug(user: str) -> str:
+    return re.sub(r"[^a-z0-9_.-]+", "_", (user or "local").lower())
+
 # Subreddits y terminos aleatorios de la busqueda Reddit (ver .env.example)
 _REDDIT_SUBS = tuple(
     s.strip() for s in os.environ.get(
@@ -108,6 +155,20 @@ def _get_rembg_session():
     return _rembg_session or None
 
 app = FastAPI(title="Meme Studio Pro")
+
+# Puerta de entrada con Basic Auth (solo si AUTH_USERS esta configurado).
+# Declarada ANTES del CORS middleware para que las respuestas 401 salgan con
+# cabeceras CORS y el navegador no las confunda con fallos de red.
+@app.middleware("http")
+async def _auth_gate(request: Request, call_next):
+    path = request.url.path
+    if AUTH_USERS and path not in _AUTH_EXEMPT and request.method != "OPTIONS":
+        try:
+            request.state.user = _check_auth(request.headers.get("authorization"))
+        except HTTPException as exc:
+            return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail}, headers=exc.headers)
+    return await call_next(request)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_CORS_ORIGINS,
@@ -334,6 +395,40 @@ def meme_image(src: str) -> Response:
     return Response(content=data, media_type=media)
 
 
+# --- Sincronizacion de borradores (movil <-> PC via el servidor) --------------
+# Cada usuario autenticado (o "local" si corre sin contrasena) tiene UN borrador
+# remoto: drafts/<usuario>.json con el meme completo (imagen en dataURL, capas,
+# posicion, filtros, marca de agua...). Subir en un sitio, traer en el otro.
+
+@app.post("/api/draft")
+async def draft_upload(request: Request) -> dict:
+    user = getattr(request.state, "user", "") or "local"
+    length = int(request.headers.get("content-length") or 0)
+    if length > _DRAFT_MAX_MB * 1024 * 1024:
+        raise HTTPException(status_code=413, detail=f"Borrador demasiado grande (max {_DRAFT_MAX_MB} MB)")
+    raw = await request.body()
+    try:
+        json.loads(raw.decode("utf-8"))
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=f"Borrador invalido (no es JSON): {exc}")
+    _DRAFT_DIR.mkdir(parents=True, exist_ok=True)
+    (_DRAFT_DIR / f"{_draft_slug(user)}.json").write_bytes(raw)
+    return {"ok": True, "user": user, "bytes": len(raw), "saved_at": round(time.time(), 3)}
+
+
+@app.get("/api/draft")
+def draft_download(request: Request) -> Response:
+    user = getattr(request.state, "user", "") or "local"
+    path = _DRAFT_DIR / f"{_draft_slug(user)}.json"
+    if not path.is_file():
+        raise HTTPException(status_code=404, detail="Este usuario todavia no tiene borrador guardado en el servidor")
+    return Response(
+        content=path.read_bytes(),
+        media_type="application/json",
+        headers={"X-Saved-At": str(int(path.stat().st_mtime))},
+    )
+
+
 # Reddit: la API JSON de reddit.com + Cloudflare bloquea este tipo de red (403
 # sin importar el User-Agent), asi que usamos Arctic Shift (archivo publico de
 # Reddit, sin clave de API) con busqueda por titulo por subreddit.
@@ -471,6 +566,10 @@ if __name__ == "__main__":
     print(f"  Meme Studio Pro iniciando...")
     print(f"  Modelo rembg: {_REMBG_MODEL}{' (ARM)' if _IS_ARM else ''}")
     print(f"  Escuchando en: {_HOST}:{_PORT}")
+    if AUTH_USERS:
+        print(f"  Acceso: usuario/contrasena ({len(AUTH_USERS)} usuarios)")
+    else:
+        print(f"  Acceso: abierto (sin contrasena; config AUTH_USERS para protegerlo)")
     print(f"  Abre en tu navegador: http://localhost:{_PORT}")
     print(f"==========================================\n")
     if _PREWARM_MODEL:
