@@ -19,7 +19,7 @@ COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Frontend + backend (StaticFiles monta /app completo)
-COPY server.py memegnerator.html app.mjs styles.css ./
+COPY server.py memegnerator.html app.mjs styles.css favicon.png ./
 
 # Puerto interno del servidor (uvicorn ya escucha en 0.0.0.0)
 EXPOSE 5005
