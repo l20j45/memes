@@ -24,6 +24,7 @@
 - [Instalar como App (PWA)](#-instalar-como-app-pwa)
 - [Sincronizar el borrador entre móvil y PC](#-sincronizar-el-borrador-entre-móvil-y-pc)
 - [Acceso con usuario y contraseña](#-acceso-con-usuario-y-contraseña)
+- [Login con cuentas (registro público)](#-login-con-cuentas-registro-público-recomendado-para-despliegues-públicos)
 - [Guía de Uso y Atajos](#-guía-de-uso-y-atajos)
 - [API del Backend](#-api-del-backend)
 - [Documentación y Contexto para Agentes de IA](#-documentación-y-contexto-para-agentes-de-ia)
@@ -96,7 +97,10 @@
 
 ```plaintext
 memes/
-├── app.mjs                     # Lógica completa de frontend (Canvas, eventos, estado, historial)
+├── app.mjs                     # Orquestador del frontend (Canvas, eventos, historial; importa el dominio de web/)
+├── web/                        # Módulos ES puros del frontend (estado, presets, geometría, inpainting, plantillas)
+├── memestudio/                 # Backend hexagonal: config, domain/, ports/, adapters/, app/ (routers FastAPI)
+├── tests/                      # Suite de tests: pytest (backend) y node --test tests/js (frontend puro)
 ├── memegnerator.html           # Estructura HTML de la interfaz y controles
 ├── styles.css                  # Estilos modernos con tema oscuro y diseño responsivo
 ├── server.py                   # Servidor API FastAPI para eliminación de fondo por IA
@@ -308,6 +312,24 @@ AUTH_USERS=daniel:mipass,novia:supass
 
 ---
 
+## 👤 Login con cuentas (registro público; recomendado para despliegues públicos)
+
+Si vas a abrir el servidor a gente de fuera (proyecto público), puedes usar **cuentas reales con registro** en lugar de Basic Auth: en el `.env` define
+
+```
+REQUIRE_LOGIN=1
+```
+
+- **Registro desde la propia interfaz**: al entrar aparece el panel "Iniciar sesión / Crear cuenta"; el usuario se registra él mismo (nombre + contraseña de 8+ caracteres) y su sesión queda guardada en una cookie `HttpOnly` de 30 días (`SESSION_DAYS`).
+- **Contraseñas nunca en claro**: se almacenan con hash **scrypt** (N=16384, sal aleatoria por usuario) en SQLite (`data/memestudio.db`, configurable con `AUTH_DB`). No hay forma de recuperar contraseñas: los usuarios borran, no se resetean.
+- **La API queda cerrada; el frontend abierto**: sin sesión ninguna llamada a `/api/*` responde 401; los estáticos (HTML/JS/CSS) siguen servidos para poder renderizar el formulario de login.
+- **Protecciones incluidas**: rate-limit en memoria (5 registros/5 min por IP, 10 logins/5 min por IP), rechazo de orígenes cruzados en los POST con cookie (mitigación CSRF, junto a `SameSite=Lax`), usuario único case-insensitive y nombre validado (3-24 caracteres).
+- **Opcional**: `REGISTRATION_OPEN=0` cierra el registro (solo entran cuentas ya creadas) y `PUBLIC_HTTPS=1` si el servidor vive detrás de HTTPS (Cloudflare Tunnel, proxy inverso) para marcar la cookie como `Secure`.
+- Los borradores de `/api/draft` se guardan por cuenta igual que con Basic Auth (`drafts/<usuario>.json`).
+- Prioridad de modos: `AUTH_USERS` (Basic) > `REQUIRE_LOGIN=1` (cuentas) > abierto (LAN, por defecto).
+
+---
+
 ## ⌨️ Guía de Uso y Atajos
 
 | Atajo de Teclado | Acción |
@@ -359,7 +381,7 @@ Búsqueda de memes en Reddit vía el archivo público de Arctic Shift (sin clave
 - **Respuesta:** mismo shape que `/api/meme-search`; las `url` van por `/api/meme-image` (dominios permitidos: imgflip, redd.it, imgur).
 
 ### `POST /api/draft` / `GET /api/draft`
-Sincronización de borradores entre dispositivos (móvil ↔ PC). Cada usuario guarda **su** borrador completo (JSON con imagen en dataURL, capas, posiciones, filtros y ajustes) en `drafts/<usuario>.json`; el usuario lo identifica la Basic Auth (`AUTH_USERS`), o es `local` si el servidor corre sin contraseña.
+Sincronización de borradores entre dispositivos (móvil ↔ PC). Cada usuario guarda **su** borrador completo (JSON con imagen en dataURL, capas, posiciones, filtros y ajustes) en `drafts/<usuario>.json`; el usuario lo identifica la sesión de su cuenta (`REQUIRE_LOGIN=1`), la Basic Auth (`AUTH_USERS`), o es `local` si el servidor corre sin contraseña.
 - **`POST`:** body = borrador JSON (máx `DRAFT_MAX_MB` MB) → `{"ok":true,"user","bytes","saved_at"}`
 - **`GET`:** el borrador guardado; `X-Saved-At` con la fecha de la última subida. `404` si el usuario aún no subió nada.
 - Requiere backend (en Android, configurar "Servidor IA").
