@@ -1,0 +1,2 @@
+rootProject.name = "MemeStudioPro"
+include(":app")
