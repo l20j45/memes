@@ -1,6 +1,16 @@
 const $ = (selector) => document.querySelector(selector);
 const MAX = 1600;
 
+// --- Android nativo (proyecto android/: WebView con JS bridge) --------------
+// Cuando corre dentro de la app Android hay un inyector de objetos llamado
+// AndroidSaver (window.AndroidSaver) que guarda la imagen en la Galeria.
+// El backend Python (rembg) no existe dentro del movil: opcionalmente el
+// usuario apunta a un servidor en su red local con "apiBase" (localStorage).
+const NATIVE_ANDROID = typeof window !== 'undefined' && typeof window.AndroidSaver?.saveImage === 'function';
+const API_BASE = ((typeof localStorage !== 'undefined' && localStorage.getItem('apiBase')) || '').replace(/\/+$/, '');
+const HAS_BACKEND = !NATIVE_ANDROID || !!API_BASE;
+const apiUrl = (path) => API_BASE + path;
+
 const FONTS = {
   Impact: { c: 'Impact, Anton, sans-serif', w: 400 },
   Anton: { c: 'Anton, Impact, sans-serif', w: 400 },
@@ -845,24 +855,41 @@ function appendTemplateSet(templates) {
   });
 }
 
-const VIRAL_CACHE = { items: [], timestamp: 0 };
+async function fetchMemeCatalog(query = '', source = 'viral') {
+  const term = (query || '').trim();
+  const useProxy = !NATIVE_ANDROID || !!API_BASE;
 
-async function fetchMemeCatalog() {
-  const now = Date.now();
-  if (VIRAL_CACHE.items.length && now - VIRAL_CACHE.timestamp < 5 * 60 * 1000) return VIRAL_CACHE.items;
+  if (source === 'reddit') {
+    if (!useProxy) throw new Error('La búsqueda en Reddit necesita el servidor (configura "Servidor IA").');
+    const endpoint = apiUrl('/api/meme-search-reddit' + (term ? `?q=${encodeURIComponent(term)}` : ''));
+    const reddit = await fetch(endpoint);
+    if (!reddit.ok) throw new Error('Busqueda en Reddit no disponible');
+    const payload = await reddit.json();
+    return Array.isArray(payload?.data?.memes) ? payload.data.memes : [];
+  }
 
+  if (useProxy) {
+    const proxy = await fetch(apiUrl('/api/meme-search' + (term ? `?q=${encodeURIComponent(term)}` : '')));
+    if (proxy.ok) {
+      const payload = await proxy.json();
+      const items = Array.isArray(payload?.data?.memes) ? payload.data.memes : [];
+      if (items.length || term) return items; // si hay termino, el proxy ya filtró
+    }
+  }
+  // Sin proxy (0 = Android sin backend): API directa de Imgflip con filtro literal
   const response = await fetch('https://api.imgflip.com/get_memes');
   if (!response.ok) throw new Error('No disponible');
 
   const payload = await response.json();
   const items = Array.isArray(payload?.data?.memes) ? payload.data.memes : [];
-  VIRAL_CACHE.items = items;
-  VIRAL_CACHE.timestamp = now;
-  return items;
+  if (!term) return items;
+  const normalized = term.toLowerCase();
+  return items.filter((item) => item?.name && item.name.toLowerCase().includes(normalized));
 }
 
-async function loadViralTemplates(query = '') {
-  const btn = $('#viralBtn');
+async function loadViralTemplates(query = '', source = 'viral') {
+  const isReddit = source === 'reddit';
+  const btn = $(isReddit ? '#redditBtn' : '#viralBtn');
   const searchBtn = $('#searchViralBtn');
   const input = $('#memeSearch');
   if (!btn || !searchBtn) return;
@@ -870,11 +897,14 @@ async function loadViralTemplates(query = '') {
   const activeBtn = query ? searchBtn : btn;
   activeBtn.disabled = true;
   activeBtn.textContent = 'Cargando...';
+  btn.disabled = true;
 
   try {
-    const items = await fetchMemeCatalog();
-    const term = (query || input?.value || '').trim().toLowerCase();
-    const filtered = !term ? [...items].sort(() => Math.random() - 0.5) : items.filter((item) => item?.name && item.name.toLowerCase().includes(term));
+    const term = (query || input?.value || '').trim();
+    const items = await fetchMemeCatalog(term, source);
+    // El backend ya filtra por termino (o devuelve posts calientes de Reddit);
+    // sin termino y con Imgflip mostramos una muestra aleatoria del catalogo.
+    const filtered = (!term && !isReddit) ? [...items].sort(() => Math.random() - 0.5) : items;
     const selected = filtered.slice(0, 12);
 
     const loaded = await Promise.all(selected.map(async (item) => {
@@ -901,16 +931,18 @@ async function loadViralTemplates(query = '') {
 
     if (valid.length) {
       appendTemplateSet(valid);
-      toast(term ? `Resultados para “${term}”` : 'Plantillas virales cargadas.');
+      toast(term ? `Resultados ${isReddit ? 'en Reddit ' : ''}para “${term}”` : (isReddit ? 'Posts calientes de memes en Reddit.' : 'Plantillas virales cargadas.'));
     } else {
       toast('No encontré memes con ese término. Prueba otro.', true);
     }
   } catch (error) {
-    console.warn('No se pudieron cargar memes virales:', error);
-    toast('No se pudieron cargar memes virales; usando plantillas locales.', true);
+    console.warn('No se pudieron cargar memes' + (isReddit ? ' desde Reddit' : ' virales') + ':', error);
+    toast(isReddit
+      ? 'No se pudo buscar en Reddit; prueba de nuevo en un momento.'
+      : 'No se pudieron cargar memes virales; usando plantillas locales.', true);
   } finally {
     btn.disabled = false;
-    btn.textContent = 'Memes virales';
+    btn.textContent = isReddit ? 'Reddit' : 'Memes virales';
     searchBtn.disabled = false;
     searchBtn.textContent = 'Buscar';
   }
@@ -944,6 +976,21 @@ function buildTemplates() {
 
   if ($('#viralBtn')) {
     $('#viralBtn').onclick = () => loadViralTemplates();
+  }
+  if ($('#redditBtn')) {
+    $('#redditBtn').onclick = () => loadViralTemplates($('#memeSearch').value, 'reddit');
+  }
+  if (NATIVE_ANDROID && $('#apiBaseRow')) {
+    // En Android el backend rembg corre en un PC de la LAN; aqui se apunta a el.
+    $('#apiBaseRow').style.display = '';
+    const input = $('#apiBase');
+    input.value = API_BASE;
+    $('#apiBaseSave').onclick = () => {
+      const value = input.value.trim().replace(/\/+$/, '');
+      localStorage.setItem('apiBase', value);
+      toast(value ? 'Servidor IA configurado; recargando...' : 'Servidor IA desactivado; recargando...');
+      setTimeout(() => location.reload(), 900);
+    };
   }
   if ($('#searchViralBtn')) {
     $('#searchViralBtn').onclick = () => loadViralTemplates($('#memeSearch').value);
@@ -1133,6 +1180,10 @@ async function removeBackgroundReal() {
     return toast('Ya hay un proceso de fondo real en marcha. Espera a que termine.', true);
   }
 
+  if (!HAS_BACKEND) {
+    return toast('"Quitar fondo real" necesita el servidor Python. En Android configúralo en "Servidor IA" (tu PC en la misma red), o usa el borrador manual.', true);
+  }
+
   const btn = $('#removeBgRealBtn');
   const originalLabel = btn.textContent;
   bgRealBusy = true;
@@ -1155,9 +1206,9 @@ async function removeBackgroundReal() {
     const form = new FormData();
     form.append('image', blob, 'image.png');
 
-    // Backend integrado en FastAPI: siempre servimos el frontend y la API
-    // desde el mismo servidor (server.py), así que una ruta relativa basta.
-    const response = await fetch('/api/remove-bg', {
+    // Backend integrado en FastAPI (o servidor remoto configurado en Android):
+    // ruta relativa en escritorio, absoluta en el móvil cuando hay apiBase.
+    const response = await fetch(apiUrl('/api/remove-bg'), {
       method: 'POST',
       body: form
     });
@@ -1177,11 +1228,49 @@ async function removeBackgroundReal() {
 
     image.c = out;
     image.mask = null;
-    image.x = .5;
-    image.y = .5;
+
+    // Auto-crop del backend: el resultado llega recortado al bounding box del
+    // canal alfa y la cabecera "X-Crop-Box: left,top,ancho_orig,alto_orig"
+    // indica que zona del original es. Re-escalamos y re-posicionamos la capa
+    // para que el sujeto ocupe en el lienzo exactamente el espacio (posicion y
+    // tamano) que ocupaba; si la cabecera no viene, queda centrado como antes.
+    const cropParts = (response.headers.get('x-crop-box') || '')
+      .split(',').map(v => Number(v.trim()));
+    const [cropLeft, cropTop, origW, origH] = cropParts;
+    if (
+      cropParts.length === 4 && cropParts.every(Number.isFinite) &&
+      origW > 0 && origH > 0 && bitmap.width < origW && bitmap.height < origH
+    ) {
+      const W = state.art.w;
+      const H = state.art.h;
+      const w0 = image.w * W;                       // ancho renderizado actual
+      const h0 = w0 * origH / origW * (image.sy || 1); // alto renderizado actual
+      const fw = bitmap.width / origW;              // fraccion conservada en X
+      const fh = bitmap.height / origH;             // fraccion conservada en Y
+      if (fw > 0 && fh > 0) {
+        const w1 = fw * w0;                          // nuevo ancho renderizado
+        const h1 = fh * h0;                          // nuevo alto renderizado
+        const left = image.x * W - w0 / 2 + (cropLeft / origW) * w0;
+        const top  = image.y * H - h0 / 2 + (cropTop / origH) * h0;
+        image.w = w1 / W;
+        image.sy = h1 / (w1 * bitmap.height / bitmap.width);
+        image.x = (left + w1 / 2) / W;
+        image.y = (top + h1 / 2) / H;
+      } else {
+        image.sy = 1;
+        image.x = .5;
+        image.y = .5;
+      }
+    } else {
+      image.sy = 1;
+      image.x = .5;
+      image.y = .5;
+    }
+
     pushHistory();
+    sync();
     schedule();
-    toast('Fondo real eliminado correctamente.');
+    toast('Fondo real eliminado y recortado correctamente.');
   } catch (error) {
     console.error(error);
     toast('El backend de fondo real no está disponible. Inícialo en Python.', true);
@@ -1459,6 +1548,21 @@ async function download() {
   const type = $('#fmt').value;
   const blob = await render(type, $('#exportPreset').value);
   if (!blob) return toast('No se pudo generar la imagen.', true);
+
+  if (NATIVE_ANDROID) {
+    // WebView: <a download> no guarda en la Galeria; el bridge nativo escribe
+    // en MediaStore (Pictures/MemeStudioPro) y dispara el escaneo multimedia.
+    const dataUrl = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result || ''));
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+    const result = String(window.AndroidSaver.saveImage(dataUrl, `meme-${Date.now()}.${EXT[type] || 'png'}`));
+    if (result === 'ok') toast('Meme guardado en la galería (Pictures/MemeStudioPro)');
+    else toast('No se pudo guardar el meme: ' + result, true);
+    return;
+  }
 
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
