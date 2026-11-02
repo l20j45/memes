@@ -17,6 +17,8 @@ export const state = {
   cleanOn: false,
   cropOn: false,
   cropRect: null,
+  cropShape: 'rect',   // 'rect' | 'poly' (poligono con nodos arrastrables)
+  cropPoly: [],        // nodos como fracciones de la fuente (0..1) de la capa
   guides: false,
   history: [],
   hIndex: -1,

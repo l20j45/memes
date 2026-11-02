@@ -88,6 +88,13 @@
             <button class="btn sm pri" id="cropApply" type="button" hidden>Aplicar recorte</button>
             <button class="btn sm" id="cropCancel" type="button" hidden>Cancelar</button>
           </div>
+          <div class="row" id="cropShapeRow" hidden>
+            <button class="btn sm" id="cropShapeRect" type="button">▭ Rectángulo</button>
+            <button class="btn sm" id="cropShapePoly" type="button">✦ Nodos (polígono)</button>
+            <button class="btn sm" id="cropPolyUndo" type="button" hidden>– Quitar nodo</button>
+            <button class="btn sm" id="cropPolyClear" type="button" hidden>Limpiar nodos</button>
+          </div>
+          <label class="hint" id="cropHintPoly" hidden style="display:block;font-size:12px;color:var(--dim, #9aa3b8)">Modo nodos: click sobre la imagen añade un punto y lo puedes arrastrar. Arrastra un punto existente para moverlo; un punto sobre un borde lo reparte. Con 3+ puntos, arrastra dentro para desplazar todo el polígono.</label>
           <div class="row"><button class="btn sm" id="frontBtn" type="button">Al frente</button><button class="btn sm" id="backBtn" type="button">Al fondo</button><button class="btn sm" id="idelBtn" type="button">Quitar imagen</button></div>
         </div>
       </div>
@@ -139,7 +146,7 @@
           <button class="btn sm pri" id="cleanBtn" type="button">Borrar lo pintado</button>
           <button class="btn sm" id="clearMask" type="button">Quitar trazo</button>
         </div>
-        <button class="btn sm" id="cropBtn" type="button">Quitar barra de texto (arriba/abajo)</button>
+        <button class="btn sm" id="cropBarsBtn" type="button">Quitar barra de texto (arriba/abajo)</button>
         <p class="note">Pinta sin precisión sobre el texto y pulsa «Borrar lo pintado». Si el texto no es blanco o negro, desmarca la casilla y pinta ajustado. Cada limpieza se puede deshacer con Ctrl+Z.</p>
       </div>
     </section>
@@ -293,6 +300,6 @@
 
 <div id="toast" role="status" aria-live="polite"></div>
 
-<script type="module" src="./app.mjs?v=13"></script>
+<script type="module" src="./app.mjs?v=14"></script>
 </body>
 </html>

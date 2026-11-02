@@ -262,6 +262,7 @@ async function loadState(idx) {
   state.isel = clamp(state.isel, 0, Math.max(0, state.imgs.length - 1));
   state.cropOn = false;   // el recorte es transitorio: el restore lo desactiva
   state.cropRect = null;
+  state.cropPoly = [];
   cv.style.cursor = state.cleanOn ? 'crosshair' : 'default';
   normalizeSelection();
   sync();
@@ -273,7 +274,11 @@ function setSelection(nextK, nextIndex) {
   state.selK = nextK;
   if (nextK === 'txt') state.sel = nextIndex;
   if (nextK === 'img') state.isel = nextIndex;
-  if (state.cropOn) state.cropRect = { x: 0, y: 0, w: 1, h: 1 }; // recorte se re-arma sobre la NUEVA capa
+  if (state.cropOn) { // recorte se re-arma sobre la NUEVA capa
+    state.cropRect = { x: 0, y: 0, w: 1, h: 1 };
+    state.cropPoly = [];
+    state.cropShape = 'rect';
+  }
   sync();
   schedule();
 }
@@ -586,6 +591,15 @@ function syncCropUI() {
   btn.setAttribute('aria-pressed', String(on));
   apply.hidden = !on;
   cancel.hidden = !on;
+  const shapeRow = $('#cropShapeRow');
+  const isPoly = (state.cropShape || 'rect') === 'poly';
+  const poly = state.cropPoly || [];
+  if (shapeRow) shapeRow.hidden = !on;
+  $('#cropShapeRect') && $('#cropShapeRect').classList.toggle('active', on && !isPoly);
+  $('#cropShapePoly') && $('#cropShapePoly').classList.toggle('active', on && isPoly);
+  $('#cropHintPoly') && ($('#cropHintPoly').hidden = !(on && isPoly));
+  $('#cropPolyUndo') && ($('#cropPolyUndo').hidden = !(on && isPoly && poly.length > 0));
+  $('#cropPolyClear') && ($('#cropPolyClear').hidden = !(on && isPoly && poly.length > 0));
 }
 
 function cropScreenRect(m) {
@@ -597,10 +611,73 @@ function cropScreenRect(m) {
 function drawCropOverlay(W) {
   const m = state.imgs[state.isel];
   if (!m || !m.box) return;
-  const cr = cropScreenRect(m);
+  const isPoly = (state.cropShape || 'rect') === 'poly';
+  const nodes = isPoly ? polyScreenNodes(m) : [];
   const u = Math.max(2, W / 380);
   const hs = u * 6;
   cx.save();
+
+  if (isPoly && nodes.length >= 3) {
+    // atenuar TODO lo de fuera del poligono (rect de capa + poligono, evenodd)
+    cx.fillStyle = 'rgba(8, 10, 18, .62)';
+    cx.beginPath();
+    cx.rect(m.box.x, m.box.y, m.box.w, m.box.h);
+    cx.moveTo(nodes[0].x, nodes[0].y);
+    for (let i = 1; i < nodes.length; i++) cx.lineTo(nodes[i].x, nodes[i].y);
+    cx.closePath();
+    cx.fill('evenodd');
+  } else if (isPoly && nodes.length) {
+    cx.fillStyle = 'rgba(8, 10, 18, .62)';
+    cx.fillRect(m.box.x, m.box.y, m.box.w, m.box.h);
+  }
+
+  if (isPoly && nodes.length) {
+    // aristas
+    cx.setLineDash([8, 7]);
+    cx.lineWidth = u;
+    cx.strokeStyle = '#f59e0b';
+    cx.beginPath();
+    cx.moveTo(nodes[0].x, nodes[0].y);
+    for (let i = 1; i < nodes.length; i++) cx.lineTo(nodes[i].x, nodes[i].y);
+    if (nodes.length >= 3) cx.closePath();
+    cx.stroke();
+    cx.setLineDash([]);
+
+    // nodos: circulos con borde blanco; el primero con doble anillo
+    nodes.forEach((n, i) => {
+      cx.beginPath();
+      cx.arc(n.x, n.y, u * 5, 0, Math.PI * 2);
+      cx.fillStyle = i === 0 ? '#fbbf24' : '#f59e0b';
+      cx.fill();
+      cx.lineWidth = u * 1.5;
+      cx.strokeStyle = '#ffffff';
+      cx.stroke();
+      if (i === 0) {
+        cx.beginPath();
+        cx.arc(n.x, n.y, u * 7.5, 0, Math.PI * 2);
+        cx.strokeStyle = 'rgba(255, 255, 255, .6)';
+        cx.stroke();
+      }
+    });
+
+    cx.fillStyle = '#fbbf24';
+    cx.font = `700 ${Math.max(12, Math.round(W / 45))}px 'Space Grotesk',sans-serif`;
+    cx.textAlign = 'center';
+    cx.textBaseline = 'middle';
+    const hint = nodes.length >= 3
+      ? 'Arrastra puntos · click en un borde: nodo nuevo · Aplicar = recorta'
+      : 'Click en la imagen para añadir puntos (3+ para poder aplicar)';
+    const hy3 = m.box.y + m.box.h + u * 12;
+    cx.fillStyle = 'rgba(8, 10, 18, .72)';
+    const hw = hint.length * W / 105;
+    cx.fillRect(m.box.x + m.box.w / 2 - hw / 2, hy3 - hs, hw, hs * 2);
+    cx.fillStyle = '#fbbf24';
+    cx.fillText(hint, m.box.x + m.box.w / 2, hy3);
+    cx.restore();
+    return;
+  }
+
+  const cr = cropScreenRect(m);
 
   // atenuar la zona descartada (fuera del rect, dentro de la capa)
   cx.fillStyle = 'rgba(8, 10, 18, .62)';
@@ -666,11 +743,13 @@ function startCropMode() {
   state.selK = 'img';
   state.cropOn = true;
   state.cropRect = { x: 0, y: 0, w: 1, h: 1 };
+  state.cropShape = 'rect';
+  state.cropPoly = [];
   if (state.cleanOn) {
     state.cleanOn = false;
     $('#cleanOn').checked = false;
   }
-  toast('Marca el área a CONSERVAR (o arrastra los bordes) y "Aplicar recorte".');
+  toast('Ajusta el area a CONSERVAR y "Aplicar recorte" (o cambia a modo Nodos).');
   sync();
   schedule();
 }
@@ -678,8 +757,57 @@ function startCropMode() {
 function cancelCrop() {
   state.cropOn = false;
   state.cropRect = null;
+  state.cropPoly = [];
   sync();
   schedule();
+}
+
+// Nodos del poligono a coordenadas de pantalla del lienzo
+function polyScreenNodes(m) {
+  const b = m.box;
+  return (state.cropPoly || []).map((f) => ({ x: b.x + f.x * b.w, y: b.y + f.y * b.h }));
+}
+
+// ray-casting: punto dentro del poligono (coords pantalla)
+function pointInPoly(px, py, nodes) {
+  let inside = false;
+  for (let i = 0, j = nodes.length - 1; i < nodes.length; j = i++) {
+    const xi = nodes[i].x, yi = nodes[i].y, xj = nodes[j].x, yj = nodes[j].y;
+    if (((yi > py) !== (yj > py)) && (px < ((xj - xi) * (py - yi)) / (yj - yi) + xi)) inside = !inside;
+  }
+  return inside;
+}
+
+// nodo bajo el cursor (radio generoso) -> indice
+function nodeHit(p, nodes, k) {
+  const r = 20 * k;
+  for (let i = nodes.length - 1; i >= 0; i--) {
+    if (Math.hypot(p.x - nodes[i].x, p.y - nodes[i].y) < r) return i;
+  }
+  return -1;
+}
+
+// proyeccion sobre cada arista: la mas cercana + distancia
+function nearestEdge(p, nodes) {
+  let best = { d: Infinity, i: -1, x: 0, y: 0 };
+  for (let i = 0; i < nodes.length; i++) {
+    const a = nodes[i];
+    const b = nodes[(i + 1) % nodes.length];
+    const dx = b.x - a.x;
+    const dy = b.y - a.y;
+    const len2 = dx * dx + dy * dy || 1;
+    const t = Math.max(0, Math.min(1, ((p.x - a.x) * dx + (p.y - a.y) * dy) / len2));
+    const x = a.x + dx * t;
+    const y = a.y + dy * t;
+    const d = Math.hypot(p.x - x, p.y - y);
+    if (d < best.d) best = { d, i, x, y };
+  }
+  return best;
+}
+
+// fraccion de un punto de pantalla dentro del box de la capa
+function screenToFrac(p, b) {
+  return { x: clamp((p.x - b.x) / b.w, 0, 1), y: clamp((p.y - b.y) / b.h, 0, 1) };
 }
 
 // Hit-test generoso del marco de recorte: primero los tiradores (radio
@@ -706,11 +834,51 @@ function cropHit(p, b, k) {
 
 function applyCrop() {
   const m = state.imgs[state.isel];
-  const r = (state.cropOn && state.cropRect) || { x: 0, y: 0, w: 1, h: 1 };
   if (!m || !m.box) {
     cancelCrop();
     return;
   }
+  const poly = state.cropPoly || [];
+
+  // --- modo poligono: conserva el interior y borra el exterior (con
+  // destination-in). La capa NO cambia de tamano ni se mueve.
+  if ((state.cropShape || 'rect') === 'poly' && poly.length >= 3) {
+    const c2 = document.createElement('canvas');
+    c2.width = m.c.width;
+    c2.height = m.c.height;
+    const c2x = c2.getContext('2d');
+    c2x.drawImage(m.c, 0, 0);
+    c2x.globalCompositeOperation = 'destination-in';
+    c2x.beginPath();
+    c2x.moveTo(poly[0].x * c2.width, poly[0].y * c2.height);
+    for (let i = 1; i < poly.length; i++) c2x.lineTo(poly[i].x * c2.width, poly[i].y * c2.height);
+    c2x.closePath();
+    c2x.fill();
+    if (m.mask && m.mask.width === c2.width && m.mask.height === c2.height) {
+      const mk = document.createElement('canvas');
+      mk.width = c2.width;
+      mk.height = c2.height;
+      const mkx = mk.getContext('2d');
+      mkx.drawImage(m.mask, 0, 0);
+      mkx.globalCompositeOperation = 'destination-in';
+      mkx.beginPath();
+      mkx.moveTo(poly[0].x * c2.width, poly[0].y * c2.height);
+      for (let i = 1; i < poly.length; i++) mkx.lineTo(poly[i].x * c2.width, poly[i].y * c2.height);
+      mkx.closePath();
+      mkx.fill();
+      m.mask = mk;
+    }
+    m.c = c2;
+    state.cropOn = false;
+    state.cropPoly = [];
+    pushHistory();
+    sync();
+    schedule();
+    toast('Recorte poligonal aplicado.');
+    return;
+  }
+
+  const r = (state.cropOn && state.cropRect) || { x: 0, y: 0, w: 1, h: 1 };
 
   const cw = m.c.width;
   const ch = m.c.height;
@@ -753,6 +921,7 @@ function applyCrop() {
 
   state.cropOn = false;
   state.cropRect = null;
+  state.cropPoly = [];
   pushHistory();
   sync();
   schedule();
@@ -1799,6 +1968,52 @@ function initEvents() {
     // modo recorte: tiene prioridad sobre todo lo demas
     const cropM = state.cropOn && state.imgs[state.isel];
     if (cropM && cropM.box) {
+      const b = cropM.box;
+
+      // --- poligono: nodos arrastrables, click añade nodo ------------------
+      if ((state.cropShape || 'rect') === 'poly') {
+        const nodes = polyScreenNodes(cropM);
+        const ni = nodeHit(p, nodes, k);
+        if (ni >= 0) {
+          // arrastra el nodo existente
+          state.drag = { m: 'crop-node', idx: ni, b };
+          cv.setPointerCapture(e.pointerId);
+          schedule();
+          return;
+        }
+        if (nodes.length >= 3 && pointInPoly(p.x, p.y, nodes)) {
+          // arrastra TODO el poligono
+          state.drag = { m: 'crop-poly', startX: p.x, startY: p.y, r0: state.cropPoly.map((f) => ({ ...f })), b };
+          cv.setPointerCapture(e.pointerId);
+          schedule();
+          return;
+        }
+        if (nodes.length >= 2) {
+          const edge = nearestEdge(p, nodes);
+          if (edge.d < 18 * k) {
+            // click sobre una arista: inserta nodo repartido y lo arrastra
+            const f = screenToFrac({ x: edge.x, y: edge.y }, b);
+            state.cropPoly.splice(edge.i + 1, 0, f);
+            state.drag = { m: 'crop-node', idx: edge.i + 1, b };
+            cv.setPointerCapture(e.pointerId);
+            schedule();
+            return;
+          }
+        }
+        // click en cualquier otro lugar de la capa: nuevo nodo (y lo arrastra)
+        if (p.x >= b.x && p.x <= b.x + b.w && p.y >= b.y && p.y <= b.y + b.h) {
+          const f = screenToFrac(p, b);
+          state.cropPoly.push(f);
+          state.drag = { m: 'crop-node', idx: state.cropPoly.length - 1, b };
+          cv.setPointerCapture(e.pointerId);
+          syncCropUI();
+          schedule();
+          return;
+        }
+        return; // click fuera de la capa: ignorar
+      }
+
+      // --- rectangulo ------------------------------------------------------
       const cr = cropScreenRect(cropM);
       const mode = cropHit(p, cr, k);
       if (mode) {
@@ -1814,7 +2029,6 @@ function initEvents() {
         return;
       }
       // click en la capa PERO fuera del marco: marquee (nuevo marco arrastrando)
-      const b = cropM.box;
       if (p.x >= b.x && p.x <= b.x + b.w && p.y >= b.y && p.y <= b.y + b.h) {
         const fx = clamp((p.x - b.x) / b.w, 0, 1);
         const fy = clamp((p.y - b.y) / b.h, 0, 1);
@@ -1919,6 +2133,16 @@ function initEvents() {
     }
 
     if (!state.drag && state.cropOn && state.imgs[state.isel] && state.imgs[state.isel].box) {
+      const m = state.imgs[state.isel];
+      if ((state.cropShape || 'rect') === 'poly') {
+        const nodes = polyScreenNodes(m);
+        if (nodeHit(p, nodes, W / 700) >= 0) cv.style.cursor = 'move';
+        else if (nodes.length >= 3 && pointInPoly(p.x, p.y, nodes)) cv.style.cursor = 'move';
+        else if (nodes.length >= 2 && nearestEdge(p, nodes).d < 18 * (W / 700)) cv.style.cursor = 'crosshair';
+        else if (p.x >= m.box.x && p.x <= m.box.x + m.box.w && p.y >= m.box.y && p.y <= m.box.y + m.box.h) cv.style.cursor = 'crosshair';
+        else cv.style.cursor = 'default';
+        return;
+      }
       const cr = cropScreenRect(state.imgs[state.isel]);
       const mode = cropHit(p, cr, W / 700);
       if (mode === 'br' || mode === 'tl') cv.style.cursor = 'nwse-resize';
@@ -1948,6 +2172,24 @@ function initEvents() {
     }
 
     const o = state.imgs[state.isel];
+    if (state.drag && (state.drag.m === 'crop-node' || state.drag.m === 'crop-poly')) {
+      const d = state.drag;
+      const f = screenToFrac(p, d.b);
+      if (d.m === 'crop-node') {
+        state.cropPoly[d.idx] = f;          // mueve/ajusta el nodo
+      } else {
+        // desplaza el poligono entero conservando su forma
+        const dx = (p.x - d.startX) / d.b.w;
+        const dy = (p.y - d.startY) / d.b.h;
+        state.cropPoly = d.r0.map((n) => ({
+          x: clamp(n.x + dx, 0, 1),
+          y: clamp(n.y + dy, 0, 1)
+        }));
+      }
+      schedule();
+      return;
+    }
+
     if (state.drag && state.drag.m.startsWith('crop-')) {
       const d = state.drag;
       const eps = .01;                       // min 1% de la fuente
@@ -2068,6 +2310,15 @@ function initEvents() {
   };
   $('#cropApply').onclick = applyCrop;
   $('#cropCancel').onclick = cancelCrop;
+  $('#cropShapeRect').onclick = () => { state.cropShape = 'rect'; syncCropUI(); schedule(); };
+  $('#cropShapePoly').onclick = () => {
+    state.cropShape = 'poly';
+    if (!state.cropPoly.length) toast('Modo nodos: haz click sobre la imagen para añadir puntos.');
+    syncCropUI();
+    schedule();
+  };
+  $('#cropPolyUndo').onclick = () => { state.cropPoly.pop(); syncCropUI(); schedule(); };
+  $('#cropPolyClear').onclick = () => { state.cropPoly = []; syncCropUI(); schedule(); };
 
   $('#isz').addEventListener('input', (event) => {
     const image = state.imgs[state.isel];
@@ -2569,7 +2820,7 @@ function initEvents() {
   };
 
   $('#cleanBtn').onclick = applyClean;
-  $('#cropBtn').onclick = cropBars;
+  $('#cropBarsBtn').onclick = cropBars;
   $('#brushV').textContent = $('#brush').value;
 
   $('#dlBtn').onclick = download;
