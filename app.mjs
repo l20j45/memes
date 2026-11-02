@@ -224,7 +224,13 @@ function wrap(text, max) {
 
 function schedule() {
   cancelAnimationFrame(state.raf);
-  state.raf = requestAnimationFrame(() => draw());
+  state.raf = requestAnimationFrame(() => {
+    draw();
+    // Autosave agresivo: cualquier cambio visual (arrastrar, pintar, controles,
+    // plantilla...) agenda el guardado del borrador poco despues de parar de
+    // interactuar; cerrar la pestana sin guardar ya no pierde el trabajo.
+    scheduleSave();
+  });
 }
 
 function geom() {
@@ -1452,6 +1458,27 @@ function saveLocal() {
   }
 }
 
+// Autoayuda del autosave: re-agenda el guardado y escribe cuando la
+// interaccion se estabiliza (~1.2s sin cambios). Los saves inmediatos
+// (pushHistory) siguen igual; esto cubre los cambios que no van al historial.
+let _localTimer = null;
+function scheduleSave(delay = 1200) {
+  clearTimeout(_localTimer);
+  _localTimer = setTimeout(saveLocal, delay);
+}
+
+window.addEventListener('beforeunload', () => {
+  clearTimeout(_localTimer);
+  saveLocal();
+});
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden') {
+    // Al minimizar/alternar app (importante en Android PWA)
+    clearTimeout(_localTimer);
+    saveLocal();
+  }
+});
+
 function loadLocal() {
   try {
     const raw = localStorage.getItem('meme_studio_draft');
@@ -2347,4 +2374,41 @@ function initEvents() {
 initEvents();
 if (document.fonts && document.fonts.ready) {
   document.fonts.ready.then(() => schedule());
+}
+
+// --- PWA: service worker (instalable desde Chrome/Edge + cache offline) -----
+// Solo en entorno web con HTTP(S); en la WebView Android (file://) no aplica.
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  navigator.serviceWorker.register('./sw.js').catch(() => {});
+}
+
+// --- Deep-link ?img= / ?t1= / ?t2= ------------------------------------------
+// Enlace con imagen precargada y (opcional) los dos textos clasicos:
+// ?img=<url de la imagen> &t1=<texto superior>&t2=<texto inferior>
+// Util para compartir un meme a medio hacer y para las capturas del README.
+try {
+  const query = new URLSearchParams(location.search);
+  const t1 = query.get('t1');
+  const t2 = query.get('t2');
+  const bootImg = query.get('img');
+
+  if ((t1 || t2) && state.layers.length >= 2) {
+    if (t1) state.layers[0].t = t1;
+    if (t2) state.layers[1].t = t2;
+    state.sel = 0;
+    sync();
+    pushHistory();
+    schedule();
+  }
+
+  if (bootImg) {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      if (img.width && img.height) addImage(img);
+    };
+    img.src = bootImg;
+  }
+} catch (error) {
+  console.warn('Deep-link de arranque invalido', error);
 }
