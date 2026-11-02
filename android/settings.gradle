@@ -1,2 +1,19 @@
+// Meme Studio Pro — settings.gradle
+// Aqui viven la gestion de plugins y repositorios (en Gradle moderno estos
+// bloques son de SETTINGS, no del build.gradle raiz).
+pluginManagement {
+    repositories {
+        google()
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
 rootProject.name = "MemeStudioPro"
 include(":app")
