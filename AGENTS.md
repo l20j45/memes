@@ -15,6 +15,11 @@ Este documento describe la arquitectura, flujo de datos, convenciones y peculiar
 
 ## 🏗️ Mapa de Archivos y Responsabilidades
 
+### 🏷️ Documentación / Tooling
+
+- **Publicación multi-arch con Podman** (PC + Raspberry Pi en una sola orden): `tools/podman_publish.sh <registro/usuario/repo[:tag]> [--no-push]` construye un manifest list `linux/amd64` (PC x64) + `linux/arm64` (Raspberry Pi 4/5, Raspberry Pi OS 64-bit) y lo sube. Requiere `podman login <registro>` previo.
+- En la Pi (con Docker o Podman): `docker pull l20j45/memestudio:latest` — cada arquitectura descarga su capa automáticamente. En ARM el modelo rembg por defecto rápido es `u2netp` (se fuerza con `REMBG_MODEL`).
+
 | Archivo | Responsabilidad Principal |
 | :--- | :--- |
 | `public/` | **Único front servido por HTTP** (StaticFiles monta esta carpeta y nada más del repo): `memegnerator.html`, `app.mjs` (orquestador ESM), `styles.css`, `index.html` (redirección), `manifest.json`, `sw.js`, `favicon.png`, `icons/` (PWA) y `web/` (módulos). |
@@ -38,6 +43,7 @@ Este documento describe la arquitectura, flujo de datos, convenciones y peculiar
 | `docs/` | Capturas del editor (`screenshot-*.png`) incrustadas en el README. |
 | `tools/remove_bg.py` | Script de línea de comandos para quitar fondos a imágenes individuales. |
 | `tools/bump_version.py` | Automatización del versionado del front: al commitear cambios de `public/` sube solo el `?v=N` de los assets tocados (app.mjs/styles.css), sube el nombre del cache del SW si cambia `sw.js`, re-sincroniza los assets del APK y commita como `chore(release)` con marcador `[skip-bump]` (antibuclado). Instalar en clones nuevos con `python3 tools/bump_version.py --install` (idempotente). |
+| `tools/podman_publish.sh` | Publicación multi-arch con Podman: manifest list `linux/amd64` (PC) + `linux/arm64` (Raspberry Pi 4/5) en una orden y push al registro (`<registro/usuario/repo[:tag]> [--no-push]`). Verificado contra `docker.io/l20j45/memestudio`. |
 | `tools/remove_bg.bat` | Script batch para invocar `tools/remove_bg.py` en entornos Windows. |
 | `tools/refresh_graph_docs.py` | Hook helper: sincroniza el bloque de estadísticas de Graphify en `AGENTS.md` con `graphify-out/graph.json` tras cada commit/cambio de rama. |
 | `README.md` | Documentación para usuarios finales y desarrolladores humanos. |
@@ -164,7 +170,7 @@ El parser de esta versión **no extrae símbolos de archivos `.py` ni `.mjs`** (
 Graphify (v0.9.100) construye y mantiene el grafo de conocimiento **real** del proyecto con tree-sitter AST (sí compiló `server.py`, `app.mjs`, `tools/remove_bg.py`; respeta `.gitignore`, así que `.venv/` y `.kindex/` están excluidos). Almacena el grafo en modo local/offline; el código se parsea sin LLM.
 
 <!-- graphify-stats:start -->
-> Grafo actualizado automáticamente por Git hooks (tools/refresh_graph_docs.py): **680 nodos · 1441 aristas · 36 comunidades** · commit de extracción `26f481eb6`. Detalles vivos: `graphify-out/GRAPH_REPORT.md` y `graph_stats` (MCP).
+> Grafo actualizado automáticamente por Git hooks (tools/refresh_graph_docs.py): **682 nodos · 1444 aristas · 32 comunidades** · commit de extracción `fd3750267`. Detalles vivos: `graphify-out/GRAPH_REPORT.md` y `graph_stats` (MCP).
 <!-- graphify-stats:end -->
 
 ### Configuración actual

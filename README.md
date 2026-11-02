@@ -208,6 +208,22 @@ $env:REMBG_MODEL="u2netp"; docker compose up -d --build
 > [!NOTE]
 > En Raspberry Pi no hay que hacer nada especial: la imagen base `python:3.11-slim` es multi-arquitectura y Docker construye la versión ARM de forma nativa. Dentro del contenedor, `platform.machine()` sigue reportando `aarch64`, así que la selección automática de modelo (`u2netp`) funciona igual que fuera del contenedor.
 
+#### Publicar la imagen ya construida (Podman): PC + Raspberry Pi
+
+Si no quieres compilar en cada máquina, publica una imagen **multi-arquitectura** (manifest list `linux/amd64` + `linux/arm64`) y cada dispositivos descarga su capa:
+
+```bash
+podman login docker.io                                   # o tu registro
+tools/podman_publish.sh docker.io/l20j45/memestudio:1.0  # build amd64+arm64 y push
+```
+
+En la Raspberry Pi (4/5, Raspberry Pi OS 64-bit) o cualquier PC:
+
+```bash
+docker pull l20j45/memestudio:1.0
+docker compose up -d        # o docker run --rm -p 5005:5005 l20j45/memestudio:1.0
+```
+
 ---
 
 ### 2. Servidor Local sin Docker (desarrollo)
