@@ -1,17 +1,17 @@
 # Graph Report - memes  (2026-11-02)
 
 ## Corpus Check
-- 14 files · ~29,542 words
+- 16 files · ~30,712 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 20 file(s) not represented in the graph (top: .xml 7, (none) 5, .css 2)
 
 ## Summary
-- 307 nodes · 577 edges · 12 communities (8 shown, 4 thin omitted)
-- Extraction: 99% EXTRACTED · 1% INFERRED · 0% AMBIGUOUS · INFERRED: 5 edges (avg confidence: 0.95)
+- 323 nodes · 596 edges · 13 communities (9 shown, 4 thin omitted)
+- Extraction: 99% EXTRACTED · 1% INFERRED · 0% AMBIGUOUS · INFERRED: 8 edges (avg confidence: 0.91)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `265b373d`
+- Built from commit: `31c4b70a`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -25,16 +25,17 @@
 - memestudio
 - refresh_graph_docs.py
 - Parar
+- manifest.json
 
 ## God Nodes (most connected - your core abstractions)
 1. `initEvents()` - 30 edges
 2. `initEvents()` - 30 edges
-3. `schedule()` - 14 edges
-4. `sync()` - 14 edges
+3. `schedule()` - 15 edges
+4. `schedule()` - 15 edges
 5. `toast()` - 14 edges
-6. `schedule()` - 14 edges
-7. `sync()` - 14 edges
-8. `toast()` - 14 edges
+6. `sync()` - 14 edges
+7. `toast()` - 14 edges
+8. `sync()` - 14 edges
 9. `pushHistory()` - 12 edges
 10. `pushHistory()` - 12 edges
 
@@ -53,7 +54,7 @@
 ## Import Cycles
 - None detected.
 
-## Communities (12 total, 4 thin omitted)
+## Communities (13 total, 4 thin omitted)
 
 ### Community 0 - "server.py"
 Cohesion: 0.05
@@ -61,7 +62,7 @@ Nodes (13): 🔍 Diagnóstico y Correcciones Recomendadas, _fetch_arctic_sub(), 
 
 ### Community 1 - "app.mjs"
 Cohesion: 0.08
-Nodes (68): addImage(), API_BASE, apiUrl(), appendTemplateSet(), applyClean(), applyRatio(), applyWatermarkPreset(), bindAccordions() (+60 more)
+Nodes (70): addImage(), API_BASE, apiUrl(), appendTemplateSet(), applyClean(), applyRatio(), applyWatermarkPreset(), bindAccordions() (+62 more)
 
 ### Community 2 - "Meme Studio Pro 🎭"
 Cohesion: 0.11
@@ -69,7 +70,7 @@ Nodes (18): 1. Clonar o acceder al repositorio, 1. Docker (modo recomendado), 2.
 
 ### Community 3 - "assets/app.mjs"
 Cohesion: 0.08
-Nodes (68): addImage(), API_BASE, apiUrl(), appendTemplateSet(), applyClean(), applyRatio(), applyWatermarkPreset(), bindAccordions() (+60 more)
+Nodes (69): addImage(), API_BASE, apiUrl(), appendTemplateSet(), applyClean(), applyRatio(), applyWatermarkPreset(), bindAccordions() (+61 more)
 
 ### Community 5 - "Meme Studio Pro - Directrices y Contexto para Agentes (AGENTS.md)"
 Cohesion: 0.09
@@ -87,6 +88,10 @@ Nodes (11): CLI equivalente (útil para scripts), Conectarse al grafo por MCP (o
 Cohesion: 0.11
 Nodes (18): 2. Servidor Local sin Docker (desarrollo), 3. Frontend Independiente (Obsoleto), 4. Script CLI Independiente, 5. Ejecución en Raspberry Pi (o ARM), 6. App Android (APK), 🔌 API del Backend, Automatización por hooks de Git, Conectar un agente al grafo (resumen) (+10 more)
 
+### Community 12 - "manifest.json"
+Cohesion: 0.17
+Nodes (11): background_color, description, display, icons, lang, name, orientation, scope (+3 more)
+
 ## Knowledge Gaps
 - **4 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
@@ -94,16 +99,16 @@ Nodes (18): 2. Servidor Local sin Docker (desarrollo), 3. Frontend Independiente
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `Parar` connect `Parar` to `server.py`, `Meme Studio Pro - Directrices y Contexto para Agentes (AGENTS.md)`?**
-  _High betweenness centrality (0.074) - this node is a cross-community bridge._
+  _High betweenness centrality (0.067) - this node is a cross-community bridge._
 - **Should `server.py` be split into smaller, more focused modules?**
   _Cohesion score 0.05272895467160037 - nodes in this community are weakly interconnected._
 - **Why does `🔍 Diagnóstico y Correcciones Recomendadas` connect `server.py` to `Parar`?**
-  _High betweenness centrality (0.051) - this node is a cross-community bridge._
+  _High betweenness centrality (0.046) - this node is a cross-community bridge._
 - **Should `app.mjs` be split into smaller, more focused modules?**
-  _Cohesion score 0.08056265984654731 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.07589984350547731 - nodes in this community are weakly interconnected._
 - **Should `Meme Studio Pro 🎭` be split into smaller, more focused modules?**
   _Cohesion score 0.1111111111111111 - nodes in this community are weakly interconnected._
 - **Should `assets/app.mjs` be split into smaller, more focused modules?**
-  _Cohesion score 0.08056265984654731 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.07950310559006211 - nodes in this community are weakly interconnected._
 - **Should `MainActivity.kt` be split into smaller, more focused modules?**
   _Cohesion score 0.12554112554112554 - nodes in this community are weakly interconnected._
