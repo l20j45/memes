@@ -1,0 +1,13 @@
+{
+  "mcp": {
+    "servers": {
+      "graphify": {
+        "type": "local",
+        "command": [
+          "graphify-mcp",
+          "graphify-out/graph.json"
+        ]
+      }
+    }
+  }
+}

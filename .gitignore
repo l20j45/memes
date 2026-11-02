@@ -1,0 +1,30 @@
+# Entornos virtuales de Python
+.venv/
+venv/
+ENV/
+env/
+
+# Byte-compiled / cachés de Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+
+# Logs
+*.log
+memesp.log
+
+# KIndex (índice local regenerable: binario + db + grafos)
+.kindex/
+
+# Graphify: cachés de extracción (graph.json y GRAPH_REPORT.md SÍ se versionan)
+graphify-out/cache/
+graphify-out/.graphify_analysis.json
+graphify-out/.graphify_root
+
+# Archivos de sistema operativo y editores
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
