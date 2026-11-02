@@ -1895,37 +1895,79 @@ const EXT = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp' };
 async function download() {
   if (!validateExportReady()) return;
 
-  const type = $('#fmt').value;
-  const blob = await render(type, $('#exportPreset').value);
-  if (!blob) return toast('No se pudo generar la imagen.', true);
+  try {
+    const type = $('#fmt').value;
+    const blob = await render(type, $('#exportPreset').value);
+    if (!blob) return toast('No se pudo generar la imagen.', true);
 
-  if (NATIVE_ANDROID) {
-    // WebView: <a download> no guarda en la Galeria; el bridge nativo escribe
-    // en MediaStore (Pictures/MemeStudioPro) y dispara el escaneo multimedia.
-    const dataUrl = await new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(String(reader.result || ''));
-      reader.onerror = reject;
-      reader.readAsDataURL(blob);
-    });
-    const result = String(window.AndroidSaver.saveImage(dataUrl, `meme-${Date.now()}.${EXT[type] || 'png'}`));
-    if (result === 'ok') toast('Meme guardado en la galería (Pictures/MemeStudioPro)');
-    else toast('No se pudo guardar el meme: ' + result, true);
-    return;
+    if (NATIVE_ANDROID && window.AndroidSaver && window.AndroidSaver.saveImage) {
+      // WebView: <a download> no guarda en la Galeria; el bridge nativo escribe
+      // en MediaStore (Pictures/MemeStudioPro) y dispara el escaneo multimedia.
+      const dataUrl = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result || ''));
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+      let result;
+      try {
+        result = String(window.AndroidSaver.saveImage(dataUrl, `meme-${Date.now()}.${EXT[type] || 'png'}`));
+      } catch (bridgeError) {
+        console.error(bridgeError);
+        result = 'error nativo: ' + (bridgeError && bridgeError.message);
+      }
+      if (result === 'ok') toast('Meme guardado en la galería (Pictures/MemeStudioPro)');
+      else toast('No se pudo guardar el meme: ' + result, true);
+      return;
+    }
+
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `meme-${Date.now()}.${EXT[type] || 'png'}`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+    toast('Meme descargado');
+  } catch (error) {
+    // en file:// (APK) un canvas tainted lanza SecurityError antes de llegar al
+    // bridge: muestralo en pantalla en vez de morir sin feedback.
+    console.error(error);
+    toast('Descarga falló: ' + (error && error.message ? error.message : error), true);
   }
-
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = `meme-${Date.now()}.${EXT[type] || 'png'}`;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
-  toast('Meme descargado');
 }
 
 async function copy() {
   if (!validateExportReady()) return;
+
+  // APK Android: navigator.clipboard no existe sobre file:// (origen no
+  // seguro) -> bridge nativo con FileProvider URI en el portapapeles.
+  if (NATIVE_ANDROID && window.AndroidSaver && window.AndroidSaver.copyImage) {
+    try {
+      const blob = await render('image/png', $('#exportPreset').value);
+      if (!blob) throw new Error('blob vacio');
+      const dataUrl = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result || ''));
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+      let result;
+      try {
+        result = String(window.AndroidSaver.copyImage(dataUrl));
+      } catch (bridgeError) {
+        console.error(bridgeError);
+        result = 'error nativo: ' + (bridgeError && bridgeError.message);
+      }
+      if (result === 'ok') toast('¡Copiado! Pégalo en cualquier app.');
+      else toast('No se pudo copiar: ' + result + ' — usa Descargar.', true);
+    } catch (error) {
+      console.error(error);
+      toast('No se pudo copiar: ' + (error && error.message ? error.message : error), true);
+    }
+    return;
+  }
+
   if (!navigator.clipboard || !window.ClipboardItem) {
     toast('Tu navegador no soporta copiar imágenes aquí. Usa Descargar.', true);
     return;
@@ -1938,7 +1980,7 @@ async function copy() {
     toast('¡Copiado al portapapeles!');
   } catch (error) {
     console.error(error);
-    toast('El navegador bloqueó la acción. Usa Descargar.', true);
+    toast('El navegador bloqueó la acción: ' + (error && error.message ? error.message : error) + '. Usa Descargar.', true);
   }
 }
 
@@ -2759,6 +2801,23 @@ function initEvents() {
   });
 
   $('#pasteBtn').onclick = async () => {
+    // APK Android: navigator.clipboard.read() no existe sobre file://
+    // -> bridge nativo que traduce el clip del sistema a dataURL.
+    if (NATIVE_ANDROID && window.AndroidSaver && window.AndroidSaver.readImage) {
+      try {
+        const dataUrl = String(window.AndroidSaver.readImage() || '');
+        if (dataUrl.startsWith('data:image/')) {
+          const blob = await (await fetch(dataUrl)).blob();
+          fromFile([blob]);
+          return;
+        }
+        toast('No hay imágenes en el portapapeles.', true);
+      } catch (bridgeError) {
+        console.error(bridgeError);
+        toast('Pegar falló: ' + (bridgeError && bridgeError.message ? bridgeError.message : bridgeError), true);
+      }
+      return;
+    }
     try {
       const items = await navigator.clipboard.read();
       for (const item of items) {

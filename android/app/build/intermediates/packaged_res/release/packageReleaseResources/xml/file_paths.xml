@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Directorios compartibles del FileProvider: cache/meme/ para el meme
+     temporal que va al portapapeles (MainActivity.copyImage). -->
+<paths>
+    <cache-path
+        name="meme"
+        path="meme/" />
+</paths>

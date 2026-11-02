@@ -1,4 +1,4 @@
-com.memestudiopro.app:xml/network_security_config = 0x7f100000
+com.memestudiopro.app:xml/network_security_config = 0x7f100001
 com.memestudiopro.app:styleable/ViewStubCompat = 0x7f0f002e
 com.memestudiopro.app:styleable/ViewBackgroundHelper = 0x7f0f002d
 com.memestudiopro.app:styleable/Toolbar = 0x7f0f002b
@@ -123,6 +123,7 @@ com.memestudiopro.app:style/RtlOverlay.Widget.AppCompat.PopupMenuItem = 0x7f0e00
 com.memestudiopro.app:style/RtlOverlay.Widget.AppCompat.ActionBar.TitleItem = 0x7f0e00ac
 com.memestudiopro.app:style/RtlOverlay.DialogWindowTitle.AppCompat = 0x7f0e00ab
 com.memestudiopro.app:style/Platform.Widget.AppCompat.Spinner = 0x7f0e00aa
+com.memestudiopro.app:xml/file_paths = 0x7f100000
 com.memestudiopro.app:style/Platform.V25.AppCompat.Light = 0x7f0e00a9
 com.memestudiopro.app:style/Platform.V21.AppCompat.Light = 0x7f0e00a7
 com.memestudiopro.app:style/Platform.ThemeOverlay.AppCompat.Dark = 0x7f0e00a4
