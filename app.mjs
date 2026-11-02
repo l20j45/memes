@@ -1,113 +1,147 @@
-const $ = (selector) => document.querySelector(selector);
-const MAX = 1600;
+/* Núcleo de la app (orquestador): importa el dominio/adaptadores de web/ y
+   mantiene la UI: eventos, canvas, historial, autosave, plantillas, drafts.
+   La extracción hexagonal por fases mantiene un solo entrypoint ESM. */
+import { $, toast } from './web/dom.js';
+import { MAX, FONTS, PRESETS, EXPORT_PRESETS } from './web/presets.js';
+import { state, mk } from './web/state.js';
+import { NATIVE_ANDROID, API_BASE, HAS_BACKEND, apiUrl } from './web/backend.js';
+import {
+  clamp, normalizeOpacity, normalizeShadowBlur, normalizeAlign, normalizeColor,
+  hexToRgb, relativeLuminance
+} from './web/geometry.js';
+import { getWatermarkBox } from './web/watermark.js';
+import { dilateMask, inpaint } from './web/image_math.js';
+import { DEFAULT_MEME_TEMPLATES, CINEMATIC_MEME_TEMPLATES } from './web/templates_data.js';
 
-// --- Android nativo (proyecto android/: WebView con JS bridge) --------------
-// Cuando corre dentro de la app Android hay un inyector de objetos llamado
-// AndroidSaver (window.AndroidSaver) que guarda la imagen en la Galeria.
-// El backend Python (rembg) no existe dentro del movil: opcionalmente el
-// usuario apunta a un servidor en su red local con "apiBase" (localStorage).
-const NATIVE_ANDROID = typeof window !== 'undefined' && typeof window.AndroidSaver?.saveImage === 'function';
-const API_BASE = ((typeof localStorage !== 'undefined' && localStorage.getItem('apiBase')) || '').replace(/\/+$/, '');
-const HAS_BACKEND = !NATIVE_ANDROID || !!API_BASE;
-const apiUrl = (path) => API_BASE + path;
+// --- Login con cuentas (sesion por cookie; registro en el servidor) ----------
+// - Si el servidor exige cuenta (REQUIRE_LOGIN=1 en server.py), el modal de
+//   login es obligatorio y la API responde 401 hasta que haya sesion.
+// - La sesion vive en una cookie HttpOnly: la UI solo necesita saber el
+//   nombre de usuario, que consulta a /api/auth/me al arrancar.
+let authUser = null;
+let authRequired = false;
+let registrationOpen = true;
 
-const FONTS = {
-  Impact: { c: 'Impact, Anton, sans-serif', w: 400 },
-  Anton: { c: 'Anton, Impact, sans-serif', w: 400 },
-  Oswald: { c: 'Oswald, sans-serif', w: 700 },
-  Montserrat: { c: 'Montserrat, sans-serif', w: 800 },
-  Comic: { c: "'Comic Neue','Comic Sans MS',cursive", w: 700 },
-  Arial: { c: 'Arial, Helvetica, sans-serif', w: 700 }
-};
+function updateUserChip() {
+  const chip = $('#userChip');
+  const out = $('#logoutBtn');
+  if (!chip || !out) return;
+  chip.hidden = !authUser;
+  out.hidden = !authUser;
+  if (authUser) chip.textContent = authUser;
+}
 
-const PRESETS = {
-  classic: { f: 'Impact', fill: '#ffffff', stroke: '#000000', s: 54, sw: 16 },
-  modern: { f: 'Montserrat', fill: '#ffffff', stroke: '#000000', s: 46, sw: 0 },
-  neon: { f: 'Anton', fill: '#00ffff', stroke: '#ff00ff', s: 52, sw: 12 }
-};
+function showAuthModal(note = '') {
+  const overlay = $('#authOverlay');
+  if (!overlay) return;
+  if (note) $('#authNote').textContent = note;
+  overlay.hidden = false;
+  clearTimeout(showAuthModal._t);
+  showAuthModal._t = setTimeout(() => $('#authUser') && $('#authUser').focus(), 60);
+}
 
-const EXPORT_PRESETS = {
-  original: { label: 'Original', w: 900, h: 900 },
-  '1080x1080': { label: '1080 × 1080', w: 1080, h: 1080 },
-  '1200x1200': { label: '1200 × 1200', w: 1200, h: 1200 },
-  '1080x1920': { label: '1080 × 1920', w: 1080, h: 1920 },
-  '1920x1080': { label: '1920 × 1080', w: 1920, h: 1080 }
-};
+function hideAuthModal() {
+  const overlay = $('#authOverlay');
+  if (overlay) overlay.hidden = true;
+  $('#authError').hidden = true;
+}
 
-const state = {
-  art: { w: 900, h: 900 },
-  orig: { w: 900, h: 900 },
-  imgs: [],
-  isel: 0,
-  selK: 'txt',
-  layers: [],
-  sel: 0,
-  bar: 0,
-  upper: true,
-  hits: [],
-  drag: null,
-  raf: 0,
-  cleanOn: false,
-  guides: false,
-  history: [],
-  hIndex: -1,
-  dropDepth: 0,
-  wm: {
-    enabled: false,
-    text: 'miweb.com',
-    x: .82,
-    y: .92,
-    size: 28,
-    fill: '#ffffff',
-    stroke: '#0b1220',
-    opacity: .8,
-    align: 'right',
-    blur: 0,
-    shadow: '#000000',
-    shadowBlur: 0,
-    locked: false
+function setAuthMode(mode) {
+  const isRegister = mode === 'register';
+  $('#authTabLogin').classList.toggle('is-active', !isRegister);
+  $('#authTabRegister').classList.toggle('is-active', isRegister);
+  $('#authTitle').textContent = isRegister ? 'Crear cuenta' : 'Inicia sesión';
+  $('#authSubmit').textContent = isRegister ? 'Crear cuenta' : 'Entrar';
+  $('#authPass2Row').hidden = !isRegister;
+  $('#authPass').autocomplete = isRegister ? 'new-password' : 'current-password';
+  $('#authError').hidden = true;
+  return isRegister;
+}
+
+async function submitAuth(event) {
+  event.preventDefault();
+  const error = $('#authError');
+  const isRegister = $('#authTabRegister').classList.contains('is-active');
+  const username = $('#authUser').value.trim();
+  const pass = $('#authPass').value;
+  const pass2 = $('#authPass2').value;
+
+  error.hidden = false;
+  if (isRegister && pass !== pass2) {
+    error.textContent = 'Las contraseñas no coinciden.';
+    return;
   }
-};
+  if (isRegister && !registrationOpen) {
+    error.textContent = 'El registro público está desactivado en este servidor.';
+    return;
+  }
+
+  $('#authSubmit').disabled = true;
+  try {
+    const response = await fetch(apiUrl(`/api/auth/${isRegister ? 'register' : 'login'}`), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password: pass })
+    });
+    const info = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      error.textContent = info.detail || (response.status === 401
+        ? 'Usuario o contraseña incorrectos.'
+        : 'No se pudo completar la operación en el servidor.');
+      return;
+    }
+    authUser = info.user || username;
+    updateUserChip();
+    hideAuthModal();
+    toast(isRegister ? `Cuenta creada. Bienvenido, ${authUser}.` : `Sesión iniciada. Hola, ${authUser}.`);
+  } catch (err) {
+    console.error(err);
+    error.textContent = 'No se pudo contactar con el servidor.';
+  } finally {
+    $('#authSubmit').disabled = false;
+  }
+}
+
+async function initAuth() {
+  try {
+    const response = await fetch(apiUrl('/api/auth/me'));
+    if (response.ok) {
+      const info = await response.json();
+      authUser = info.user || null;
+      authRequired = !!info.auth_required;
+      registrationOpen = info.registration_open !== false;
+    }
+  } catch (error) {
+    // Sin backend (Android sin servidor / offline): no hay login que mostrar.
+  }
+  updateUserChip();
+  if (authRequired && !authUser) {
+    showAuthModal('Este servidor requiere una cuenta para usarse. Regístrate o inicia sesión.');
+  }
+}
+
+async function logout() {
+  try {
+    await fetch(apiUrl('/api/auth/logout'), { method: 'POST' });
+  } catch (error) {
+    // sin conexion: se limpia igualmente la vista local
+  }
+  authUser = null;
+  updateUserChip();
+  toast('Sesión cerrada.');
+  if (authRequired) showAuthModal('Inicia sesión de nuevo para usar el servidor.');
+}
+
+// Ante un 401 de la API (sesion expirada o no iniciada): abre el login.
+function handleUnauthorized() {
+  authUser = null;
+  updateUserChip();
+  showAuthModal('Inicia sesión para usar las funciones del servidor.');
+}
+
 
 const cv = $('#cv');
 const cx = cv.getContext('2d');
-
-const mk = (t = '', o = {}) => ({
-  t,
-  x: .5,
-  y: .5,
-  s: 54,
-  f: 'Impact',
-  fill: '#ffffff',
-  stroke: '#000000',
-  sw: 14,
-  align: 'center',
-  opacity: 1,
-  shadow: '#000000',
-  shadowBlur: 0,
-  locked: false,
-  ...o
-});
-
-const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
-const normalizeOpacity = (value) => clamp(Number(value ?? 1), .1, 1);
-const normalizeShadowBlur = (value) => clamp(Number(value ?? 0), 0, 30);
-const normalizeAlign = (value) => ['left', 'center', 'right'].includes(value) ? value : 'center';
-const normalizeColor = (value, fallback) => {
-  const candidate = typeof value === 'string' ? value.trim() : '';
-  if (!candidate) return fallback;
-  const valid = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/.test(candidate);
-  return valid ? candidate : fallback;
-};
-
-function toast(msg, err = false) {
-  const t = $('#toast');
-  t.textContent = msg;
-  t.classList.toggle('err', !!err);
-  t.classList.add('show');
-  clearTimeout(toast.t);
-  toast.t = setTimeout(() => t.classList.remove('show'), 2400);
-}
 
 function cur() {
   return state.layers[state.sel];
@@ -238,50 +272,12 @@ function geom() {
   return { W: state.art.w, bh, H: state.art.h + bh };
 }
 
-function hexToRgb(hex) {
-  const value = hex.replace('#', '');
-  const full = value.length === 3 ? value.split('').map((char) => char + char).join('') : value;
-  const int = Number.parseInt(full, 16);
-  return {
-    r: (int >> 16) & 255,
-    g: (int >> 8) & 255,
-    b: int & 255
-  };
-}
-
-function relativeLuminance(hex) {
-  const { r, g, b } = hexToRgb(hex || '#ffffff');
-  const channel = (value) => {
-    const s = value / 255;
-    return s <= .03928 ? s / 12.92 : ((s + .055) / 1.055) ** 2.4;
-  };
-  return 0.2126 * channel(r) + 0.7152 * channel(g) + 0.0722 * channel(b);
-}
-
 function getWatermarkColors() {
   const bg = ($('#bg').value || '#ffffff').trim();
   const dark = relativeLuminance(bg) > 0.52;
   return dark
     ? { fill: 'rgba(15,23,42,0.78)', stroke: 'rgba(255,255,255,0.9)' }
     : { fill: 'rgba(255,255,255,0.75)', stroke: 'rgba(15,23,42,0.8)' };
-}
-
-function getWatermarkBox(ctx, W, H) {
-  const wm = state.wm || {};
-  const txt = (wm.text || '').trim();
-  if (!wm.enabled || !txt) return null;
-
-  ctx.save();
-  ctx.font = `700 ${Math.round((wm.size || 28))}px sans-serif`;
-  ctx.textAlign = wm.align || 'right';
-  ctx.textBaseline = 'middle';
-  const metrics = ctx.measureText(txt);
-  const px = (wm.x ?? .82) * W;
-  const py = (wm.y ?? .92) * H;
-  const left = wm.align === 'left' ? px : wm.align === 'center' ? px - metrics.width / 2 : px - metrics.width;
-  const top = py - ((wm.size || 28) / 2);
-  ctx.restore();
-  return { x: left, y: top, w: metrics.width, h: wm.size || 28 };
 }
 
 // Patrón de cuadrícula estilo "PNG transparente": cuadros blanco/gris claro
@@ -689,154 +685,6 @@ function bindControl(id, key, numeric = false) {
   });
 }
 
-const DEFAULT_MEME_TEMPLATES = [
-  {
-    n: 'Drake Hotline', w: 900, h: 900,
-    fn: (ctx, w, h) => {
-      const g = ctx.createLinearGradient(0, 0, w, h);
-      g.addColorStop(0, '#121826');
-      g.addColorStop(1, '#1d4ed8');
-      ctx.fillStyle = g;
-      ctx.fillRect(0, 0, w, h);
-      ctx.fillStyle = '#fff';
-      ctx.font = '700 52px Arial';
-      ctx.fillText('NOPE', 90, 180);
-      ctx.fillText('SI', 660, 720);
-      ctx.fillStyle = '#fbbf24';
-      ctx.fillRect(70, 240, w - 140, 340);
-      ctx.fillStyle = '#1f2937';
-      ctx.fillRect(70, 320, w - 140, 240);
-      ctx.fillStyle = '#fff';
-      ctx.fillText('Me gusta', 120, 380);
-      ctx.fillText('Me gusta', 120, 440);
-      ctx.fillStyle = '#d1d5db';
-      ctx.fillRect(120, 560, w - 240, 6);
-    }
-  },
-  {
-    n: 'Woman yelling', w: 900, h: 900,
-    fn: (ctx, w, h) => {
-      ctx.fillStyle = '#f3f3f3';
-      ctx.fillRect(0, 0, w, h);
-      ctx.fillStyle = '#facc15';
-      ctx.fillRect(0, 0, w, h * .45);
-      ctx.fillStyle = '#0f172a';
-      ctx.fillRect(0, h * .45, w, h * .55);
-      ctx.fillStyle = '#fff';
-      ctx.font = '700 46px Arial';
-      ctx.fillText('Mujer', 90, 140);
-      ctx.fillText('gritando', 90, 190);
-      ctx.fillText('Gato', 540, 760);
-      ctx.fillText('calmado', 540, 810);
-    }
-  },
-  {
-    n: 'Success Kid', w: 900, h: 900,
-    fn: (ctx, w, h) => {
-      ctx.fillStyle = '#f5d0a9';
-      ctx.fillRect(0, 0, w, h);
-      ctx.fillStyle = '#f59e0b';
-      ctx.beginPath();
-      ctx.arc(440, 360, 220, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = '#111827';
-      ctx.fillRect(250, 520, 400, 180);
-      ctx.fillStyle = '#fff';
-      ctx.font = '700 58px Arial';
-      ctx.fillText('¡ÉXITO!', 280, 170);
-    }
-  },
-  {
-    n: 'One does not simply', w: 900, h: 900,
-    fn: (ctx, w, h) => {
-      const sky = ctx.createLinearGradient(0, 0, 0, h);
-      sky.addColorStop(0, '#2d2d34');
-      sky.addColorStop(1, '#111827');
-      ctx.fillStyle = sky;
-      ctx.fillRect(0, 0, w, h);
-      ctx.fillStyle = '#d1d5db';
-      ctx.fillRect(110, 160, 680, 520);
-      ctx.fillStyle = '#111827';
-      ctx.font = '700 42px Arial';
-      ctx.fillText('ONE DOES NOT', 140, 220);
-      ctx.fillText('SIMPLY', 250, 280);
-      ctx.fillText('Meme', 330, 700);
-    }
-  },
-  {
-    n: 'This is fine', w: 900, h: 900,
-    fn: (ctx, w, h) => {
-      ctx.fillStyle = '#facc15';
-      ctx.fillRect(0, 0, w, h);
-      ctx.fillStyle = '#1f2937';
-      ctx.fillRect(220, 220, 460, 430);
-      ctx.fillStyle = '#fbbf24';
-      ctx.fillRect(260, 310, 130, 130);
-      ctx.fillRect(500, 310, 130, 130);
-      ctx.fillStyle = '#111827';
-      ctx.fillRect(390, 510, 120, 70);
-      ctx.font = '700 56px Arial';
-      ctx.fillText('THIS IS FINE', 120, 180);
-    }
-  },
-  {
-    n: 'Expanding brain', w: 900, h: 900,
-    fn: (ctx, w, h) => {
-      ctx.fillStyle = '#1f2937';
-      ctx.fillRect(0, 0, w, h);
-      ctx.fillStyle = '#f59e0b';
-      ctx.fillRect(100, 120, 200, 200);
-      ctx.fillRect(320, 180, 200, 200);
-      ctx.fillRect(540, 240, 200, 220);
-      ctx.fillStyle = '#fff';
-      ctx.font = '700 38px Arial';
-      ctx.fillText('Idea', 160, 200);
-      ctx.fillText('Más', 390, 260);
-      ctx.fillText('¡Boom!', 590, 330);
-    }
-  }
-];
-
-const CINEMATIC_MEME_TEMPLATES = [
-  {
-    n: 'Cine brutal', w: 900, h: 900,
-    fn: (ctx, w, h) => {
-      ctx.fillStyle = '#0f172a';
-      ctx.fillRect(0, 0, w, h);
-      ctx.fillStyle = '#f8fafc';
-      ctx.font = '700 52px Arial';
-      ctx.fillText('SOLO', 130, 170);
-      ctx.fillText('UN POCO', 250, 710);
-      ctx.fillStyle = '#ef4444';
-      ctx.fillRect(120, 220, 660, 300);
-    }
-  },
-  {
-    n: 'Plot twist', w: 900, h: 900,
-    fn: (ctx, w, h) => {
-      ctx.fillStyle = '#111827';
-      ctx.fillRect(0, 0, w, h);
-      ctx.fillStyle = '#fbbf24';
-      ctx.fillRect(0, 0, w, 140);
-      ctx.fillStyle = '#fff';
-      ctx.font = '700 48px Arial';
-      ctx.fillText('PLOT TWIST', 200, 220);
-      ctx.fillText('Meme', 300, 700);
-    }
-  },
-  {
-    n: 'Drama', w: 900, h: 900,
-    fn: (ctx, w, h) => {
-      ctx.fillStyle = '#1f2937';
-      ctx.fillRect(0, 0, w, h);
-      ctx.fillStyle = '#fcd34d';
-      ctx.fillRect(80, 160, 740, 540);
-      ctx.fillStyle = '#111827';
-      ctx.font = '700 54px Arial';
-      ctx.fillText('DRAMA', 280, 300);
-    }
-  }
-];
 
 function appendTemplateSet(templates) {
   const box = $('#tpl');
@@ -869,6 +717,10 @@ async function fetchMemeCatalog(query = '', source = 'viral') {
     if (!useProxy) throw new Error('La búsqueda en Reddit necesita el servidor (configura "Servidor IA").');
     const endpoint = apiUrl('/api/meme-search-reddit' + (term ? `?q=${encodeURIComponent(term)}` : ''));
     const reddit = await fetch(endpoint);
+    if (reddit.status === 401) {
+      handleUnauthorized();
+      throw new Error('Inicia sesión en el servidor para buscar en Reddit.');
+    }
     if (!reddit.ok) throw new Error('Busqueda en Reddit no disponible');
     const payload = await reddit.json();
     return Array.isArray(payload?.data?.memes) ? payload.data.memes : [];
@@ -876,6 +728,10 @@ async function fetchMemeCatalog(query = '', source = 'viral') {
 
   if (useProxy) {
     const proxy = await fetch(apiUrl('/api/meme-search' + (term ? `?q=${encodeURIComponent(term)}` : '')));
+    if (proxy.status === 401) {
+      handleUnauthorized();
+      throw new Error('Inicia sesión en el servidor para buscar memes.');
+    }
     if (proxy.ok) {
       const payload = await proxy.json();
       const items = Array.isArray(payload?.data?.memes) ? payload.data.memes : [];
@@ -1061,126 +917,6 @@ function stroke(p, first) {
   state.drag.ly = y;
 }
 
-function dilateMask(mask, w, h, radius) {
-  const temp = new Uint8Array(w * h);
-  const result = new Uint8Array(w * h);
-
-  for (let y = 0; y < h; y++) {
-    for (let x = 0; x < w; x++) {
-      let found = 0;
-      for (let k = -radius; k <= radius; k++) {
-        const xx = x + k;
-        if (xx >= 0 && xx < w && mask[y * w + xx]) {
-          found = 1;
-          break;
-        }
-      }
-      temp[y * w + x] = found;
-    }
-  }
-
-  for (let y = 0; y < h; y++) {
-    for (let x = 0; x < w; x++) {
-      let found = 0;
-      for (let k = -radius; k <= radius; k++) {
-        const yy = y + k;
-        if (yy >= 0 && yy < h && temp[yy * w + x]) {
-          found = 1;
-          break;
-        }
-      }
-      result[y * w + x] = found;
-    }
-  }
-
-  return result;
-}
-
-function inpaint(d, hole, w, h) {
-  const col = new Float32Array(w * h * 3);
-  const wt = new Float32Array(w * h);
-  for (let i = 0; i < w * h; i++) {
-    if (!hole[i]) {
-      wt[i] = 1;
-      col[i * 3] = d[i * 4];
-      col[i * 3 + 1] = d[i * 4 + 1];
-      col[i * 3 + 2] = d[i * 4 + 2];
-    }
-  }
-
-  const levels = [{ w, h, col, wt }];
-  while (levels[levels.length - 1].w > 1 || levels[levels.length - 1].h > 1) {
-    const last = levels[levels.length - 1];
-    const nw = Math.ceil(last.w / 2);
-    const nh = Math.ceil(last.h / 2);
-    const nc = new Float32Array(nw * nh * 3);
-    const nt = new Float32Array(nw * nh);
-    for (let y = 0; y < nh; y++) {
-      for (let x = 0; x < nw; x++) {
-        const index = y * nw + x;
-        for (let dy = 0; dy < 2; dy++) {
-          for (let dx = 0; dx < 2; dx++) {
-            const j = Math.min(last.h - 1, y * 2 + dy) * last.w + Math.min(last.w - 1, x * 2 + dx);
-            nt[index] += last.wt[j] / 4;
-            nc[index * 3] += last.col[j * 3] / 4;
-            nc[index * 3 + 1] += last.col[j * 3 + 1] / 4;
-            nc[index * 3 + 2] += last.col[j * 3 + 2] / 4;
-          }
-        }
-      }
-    }
-    levels.push({ w: nw, h: nh, col: nc, wt: nt });
-  }
-
-  let output = null;
-  for (let levelIndex = levels.length - 1; levelIndex >= 0; levelIndex--) {
-    const level = levels[levelIndex];
-    const next = levelIndex < levels.length - 1 ? levels[levelIndex + 1] : null;
-    const result = new Float32Array(level.w * level.h * 3);
-
-    for (let y = 0; y < level.h; y++) {
-      for (let x = 0; x < level.w; x++) {
-        const index = y * level.w + x;
-        const alpha = Math.min(1, level.wt[index]);
-        if (!next) {
-          result[index * 3] = level.col[index * 3] / Math.max(alpha, 1e-6);
-          result[index * 3 + 1] = level.col[index * 3 + 1] / Math.max(alpha, 1e-6);
-          result[index * 3 + 2] = level.col[index * 3 + 2] / Math.max(alpha, 1e-6);
-          continue;
-        }
-
-        const fx = Math.max(0, Math.min(next.w - 1, (x + .5) / 2 - .5));
-        const fy = Math.max(0, Math.min(next.h - 1, (y + .5) / 2 - .5));
-        const x0 = fx | 0;
-        const y0 = fy | 0;
-        const x1 = Math.min(next.w - 1, x0 + 1);
-        const y1 = Math.min(next.h - 1, y0 + 1);
-        const tx = fx - x0;
-        const ty = fy - y0;
-
-        for (let channel = 0; channel < 3; channel++) {
-          const up = (
-            (output[(y0 * next.w + x0) * 3 + channel] * (1 - tx) + output[(y0 * next.w + x1) * 3 + channel] * tx) * (1 - ty) +
-            (output[(y1 * next.w + x0) * 3 + channel] * (1 - tx) + output[(y1 * next.w + x1) * 3 + channel] * tx) * ty
-          );
-          result[index * 3 + channel] = level.col[index * 3 + channel] + (1 - alpha) * up;
-        }
-      }
-    }
-
-    output = result;
-  }
-
-  for (let i = 0; i < w * h; i++) {
-    if (hole[i]) {
-      d[i * 4] = output[i * 3];
-      d[i * 4 + 1] = output[i * 3 + 1];
-      d[i * 4 + 2] = output[i * 3 + 2];
-      d[i * 4 + 3] = 255;
-    }
-  }
-}
-
 // Bandera de proceso en curso: evita lanzar la inferencia de rembg una
 // segunda vez mientras la primera sigue corriendo en el backend (cada llamada
 // ejecuta un modelo U2-Net bloqueante en CPU y encolarlas puede saturar
@@ -1229,6 +965,10 @@ async function removeBackgroundReal() {
     });
 
     if (!response.ok) {
+      if (response.status === 401) {
+        handleUnauthorized();
+        throw new Error('Inicia sesión en el servidor para "Quitar fondo real".');
+      }
       const text = await response.text();
       throw new Error(text || 'Fallo del backend');
     }
@@ -1582,8 +1322,8 @@ async function restoreRemoteDraft(data) {
 }
 
 function authErrorMessage(status, fallback) {
-  if (status === 401) return 'Login requerido (usuario/contrasena del servidor).';
-  if (status === 404) return 'El servidor no tiene ningun borrador guardado para tu usuario.';
+  if (status === 401) return 'Inicia sesión (o crea una cuenta) para guardar tu borrador en el servidor.';
+  if (status === 404) return 'Este usuario todavía no tiene ningún borrador guardado en el servidor.';
   if (status === 413) return 'El borrador es demasiado grande para el servidor.';
   return fallback;
 }
@@ -1604,6 +1344,7 @@ async function uploadDraft() {
       body: JSON.stringify(remoteDraftPayload())
     });
     if (!response.ok) {
+      if (response.status === 401) handleUnauthorized();
       toast(authErrorMessage(response.status, 'No se pudo subir el borrador.'), true);
       return;
     }
@@ -1627,6 +1368,7 @@ async function downloadDraft() {
   try {
     const response = await fetch(apiUrl('/api/draft'));
     if (!response.ok) {
+      if (response.status === 401) handleUnauthorized();
       toast(authErrorMessage(response.status, 'No se pudo traer el borrador.'), true);
       return;
     }
@@ -2497,6 +2239,12 @@ function initEvents() {
   $('#undoBtn').onclick = () => loadState(state.hIndex - 1);
   $('#redoBtn').onclick = () => loadState(state.hIndex + 1);
 
+  // Login / registro
+  $('#authTabLogin') && ($('#authTabLogin').onclick = () => setAuthMode('login'));
+  $('#authTabRegister') && ($('#authTabRegister').onclick = () => setAuthMode('register'));
+  $('#authForm') && ($('#authForm').onsubmit = submitAuth);
+  $('#logoutBtn') && ($('#logoutBtn').onclick = logout);
+
   bindControl('txt', 't');
   bindControl('fill', 'fill');
   bindControl('stroke', 'stroke');
@@ -2518,6 +2266,7 @@ function initEvents() {
 }
 
 initEvents();
+initAuth();
 if (document.fonts && document.fonts.ready) {
   document.fonts.ready.then(() => schedule());
 }
