@@ -18,10 +18,10 @@ WORKDIR /app
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Frontend + backend (StaticFiles monta /app completo)
-COPY server.py memegnerator.html app.mjs styles.css favicon.png manifest.json sw.js icon-192.png icon-512.png apple-touch-icon.png ./
-COPY web ./web/
+# Backend + frontend (solo public/ se sirve por HTTP; ver create_app)
+COPY server.py ./
 COPY memestudio ./memestudio/
+COPY public ./public/
 
 # Puerto interno del servidor (uvicorn ya escucha en 0.0.0.0)
 EXPOSE 5005

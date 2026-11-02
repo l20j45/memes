@@ -2,7 +2,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { dilateMask, inpaint } from '../../web/image_math.js';
+import { dilateMask, inpaint } from '../../public/web/image_math.js';
 
 function grid(w, h, set) {
   const m = new Uint8Array(w * h);

@@ -7,8 +7,8 @@ from fastapi.testclient import TestClient
 from memestudio.app.create_app import create_app
 from memestudio.config import Settings
 
-# El montaje de estáticos usa settings.root: apunta al frontend REAL del repo
-# (tmp_path no tiene HTML); la BD y drafts sí a tmp (aislados por test).
+# El index se sirve desde public/ (frontend_dir de Settings); la BD y drafts
+# sí a tmp (aislados por test).
 REPO_ROOT = Settings().root
 
 

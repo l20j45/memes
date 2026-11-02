@@ -46,8 +46,12 @@ def _parse_auth_users(raw: str) -> dict:
 class Settings:
     """Configuración inmutable de la aplicación (una instancia por proceso)."""
 
-    # Ruta de la raíz del proyecto (para sirver el frontend y ficheros local)
+    # Ruta de la raíz del proyecto (para resolver rutas de datos locales)
     root: Path = field(default_factory=lambda: Path(__file__).resolve().parent.parent)
+
+    # Carpeta de frontend servible por HTTP (la ÚNICA montada como estáticos;
+    # todo lo demás del repo nunca se sirve). Ver gotchas en AGENTS.md.
+    frontend_dir: Path = field(default_factory=lambda: Path(__file__).resolve().parent.parent / "public")
 
     # Servidor HTTP local; en Docker el contenedor SIEMPRE escucha en 0.0.0.0:5005
     host: str = "0.0.0.0"
@@ -102,6 +106,7 @@ def load_settings() -> Settings:
 
     return Settings(
         root=root,
+        frontend_dir=root / "public",
         host=os.environ.get("HOST", "0.0.0.0"),
         port=int(os.environ.get("PORT", "5005")),
         cors_origins=cors,

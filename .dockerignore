@@ -11,6 +11,10 @@ __pycache__
 *.pyc
 tools
 docs
+tests
+android
+data
+drafts
 *.md
 docker-compose.yml
 Dockerfile

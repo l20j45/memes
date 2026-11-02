@@ -97,15 +97,19 @@
 
 ```plaintext
 memes/
-├── app.mjs                     # Orquestador del frontend (Canvas, eventos, historial; importa el dominio de web/)
-├── web/                        # Módulos ES puros del frontend (estado, presets, geometría, inpainting, plantillas)
-├── memestudio/                 # Backend hexagonal: config, domain/, ports/, adapters/, app/ (routers FastAPI)
-├── tests/                      # Suite de tests: pytest (backend) y node --test tests/js (frontend puro)
-├── memegnerator.html           # Estructura HTML de la interfaz y controles
-├── styles.css                  # Estilos modernos con tema oscuro y diseño responsivo
-├── server.py                   # Servidor API FastAPI para eliminación de fondo por IA
+├── public/                    # Único contenido servido por HTTP (copia literal a assets/ en Android)
+│   ├── memegnerator.html      # Estructura HTML de la interfaz y controles
+│   ├── app.mjs                # Orquestador del frontend (Canvas, eventos, historial)
+│   ├── styles.css             # Estilos con tema oscuro y diseño responsivo
+│   ├── web/                   # Módulos ES puros (estado, presets, geometría, inpainting, plantillas)
+│   ├── index.html             # Redirección a memegnerator.html
+│   ├── manifest.json / sw.js  # PWA (instalable + offline básico)
+│   └── icons/ + favicon.png   # Iconos 192/512/maskable + favicon
+├── server.py                  # Entrypoint: carga Settings y lanza uvicorn
+├── memestudio/                # Backend hexagonal: config, domain/, ports/, adapters/, app/ (routers FastAPI)
+├── tests/                     # Suite de tests: pytest (backend) y node --test tests/js (frontend puro)
 ├── requirements.txt            # Dependencias de Python (FastAPI, Rembg con backend CPU, Pillow, Uvicorn)
-├── opencode.json               # Configuración de OpenCode: registra el servidor MCP del grafo de Graphify
+├── opencode.json              # Configuración de OpenCode: registra el servidor MCP del grafo de Graphify
 ├── .gitattributes              # Merge driver de Graphify para fusionar graph.json sin conflictos
 ├── tools/
 │   ├── remove_bg.py            # Script CLI para procesar imágenes locales desde terminal

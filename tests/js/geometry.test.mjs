@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import {
   clamp, normalizeOpacity, normalizeShadowBlur, normalizeAlign, normalizeColor,
   hexToRgb, relativeLuminance,
-} from '../../web/geometry.js';
+} from '../../public/web/geometry.js';
 
 test('clamp acota en ambos extremos', () => {
   assert.equal(clamp(5, 0, 10), 5);
