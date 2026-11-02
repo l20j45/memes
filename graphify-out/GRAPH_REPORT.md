@@ -1,17 +1,17 @@
 # Graph Report - memes  (2026-11-02)
 
 ## Corpus Check
-- 14 files · ~29,354 words
+- 14 files · ~29,542 words
 - Verdict: corpus is large enough that graph structure adds value.
-- Unclassified: 19 file(s) not represented in the graph (top: .xml 7, (none) 4, .css 2)
+- Unclassified: 20 file(s) not represented in the graph (top: .xml 7, (none) 5, .css 2)
 
 ## Summary
-- 306 nodes · 576 edges · 12 communities (8 shown, 4 thin omitted)
+- 307 nodes · 577 edges · 12 communities (8 shown, 4 thin omitted)
 - Extraction: 99% EXTRACTED · 1% INFERRED · 0% AMBIGUOUS · INFERRED: 5 edges (avg confidence: 0.95)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `ab839e7c`
+- Built from commit: `265b373d`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -41,9 +41,9 @@
 ## Surprising Connections (you probably didn't know these)
 - `Conectar un agente al grafo (resumen)` --references--> `graph_stats()`  [INFERRED]
   README.md → tools/refresh_graph_docs.py
-- `Herramientas MCP (prefijo `graphify_`)` --references--> `graph_stats()`  [INFERRED]
-  AGENTS.md → tools/refresh_graph_docs.py
 - `Conectarse al grafo por MCP (otros agentes y clientes)` --references--> `graph_stats()`  [INFERRED]
+  AGENTS.md → tools/refresh_graph_docs.py
+- `Herramientas MCP (prefijo `graphify_`)` --references--> `graph_stats()`  [INFERRED]
   AGENTS.md → tools/refresh_graph_docs.py
 - `📊 Graphify — Grafo de Conocimiento del Código (contexto primario)` --references--> `graph_stats()`  [INFERRED]
   AGENTS.md → tools/refresh_graph_docs.py
@@ -96,7 +96,7 @@ _Questions this graph is uniquely positioned to answer:_
 - **Why does `Parar` connect `Parar` to `server.py`, `Meme Studio Pro - Directrices y Contexto para Agentes (AGENTS.md)`?**
   _High betweenness centrality (0.074) - this node is a cross-community bridge._
 - **Should `server.py` be split into smaller, more focused modules?**
-  _Cohesion score 0.05410628019323672 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.05272895467160037 - nodes in this community are weakly interconnected._
 - **Why does `🔍 Diagnóstico y Correcciones Recomendadas` connect `server.py` to `Parar`?**
   _High betweenness centrality (0.051) - this node is a cross-community bridge._
 - **Should `app.mjs` be split into smaller, more focused modules?**
