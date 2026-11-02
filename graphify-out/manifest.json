@@ -1,8 +1,8 @@
 {
   "app.mjs": {
-    "mtime": 1793599855.077918,
-    "seen": 1793600318.3811083,
-    "ast_hash": "c4a6e381588dd367ecbc48bc05f4684b",
+    "mtime": 1793601143.8613997,
+    "seen": 1793601496.5491865,
+    "ast_hash": "9400157e6f9e825ca6190b997b7961c3",
     "semantic_hash": ""
   },
   "server.py": {
@@ -24,15 +24,15 @@
     "semantic_hash": ""
   },
   "AGENTS.md": {
-    "mtime": 1793600340.2717297,
-    "seen": 1793600343.7321348,
-    "ast_hash": "ad4e8619e555c658e448a1b6c77e4dfa",
+    "mtime": 1793601426.8212504,
+    "seen": 1793601496.5492022,
+    "ast_hash": "f71f86a8bb5d7cda421050d5d8e0b953",
     "semantic_hash": ""
   },
   "README.md": {
-    "mtime": 1793600206.1124334,
-    "seen": 1793600318.3811269,
-    "ast_hash": "a3e330714b914b71218645b83683af7b",
+    "mtime": 1793601482.4715812,
+    "seen": 1793601496.5492036,
+    "ast_hash": "fe0c6ad1f00728e4595fc55bf8a7a21c",
     "semantic_hash": ""
   },
   "index.html": {
@@ -42,9 +42,9 @@
     "semantic_hash": ""
   },
   "memegnerator.html": {
-    "mtime": 1793600583.3272328,
-    "seen": 1793600758.4268386,
-    "ast_hash": "a1548c1cb16a26305a024db60946a661",
+    "mtime": 1793600982.7762086,
+    "seen": 1793601496.5492122,
+    "ast_hash": "13dd5f8bee8011df375b22f27ed598f3",
     "semantic_hash": ""
   },
   "requirements.txt": {
@@ -72,9 +72,9 @@
     "semantic_hash": ""
   },
   "android/app/src/main/assets/app.mjs": {
-    "mtime": 1793599855.077918,
-    "seen": 1793600318.381097,
-    "ast_hash": "c4a6e381588dd367ecbc48bc05f4684b",
+    "mtime": 1793601143.8613997,
+    "seen": 1793601496.5491738,
+    "ast_hash": "9400157e6f9e825ca6190b997b7961c3",
     "semantic_hash": ""
   },
   "android/app/src/main/java/com/memestudiopro/app/MainActivity.kt": {
@@ -108,9 +108,9 @@
     "semantic_hash": ""
   },
   "android/app/src/main/assets/memegnerator.html": {
-    "mtime": 1793600583.3272328,
-    "seen": 1793600758.4268353,
-    "ast_hash": "a1548c1cb16a26305a024db60946a661",
+    "mtime": 1793600982.7762086,
+    "seen": 1793601496.549209,
+    "ast_hash": "13dd5f8bee8011df375b22f27ed598f3",
     "semantic_hash": ""
   },
   "android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png": {
@@ -123,6 +123,54 @@
     "mtime": 1793600575.8123732,
     "seen": 1793600758.4268441,
     "ast_hash": "29aa14880807039cd68a02ecb4a5e260",
+    "semantic_hash": ""
+  },
+  "manifest.json": {
+    "mtime": 1793600963.5900002,
+    "seen": 1793601496.549191,
+    "ast_hash": "104afaa257fdb11bbd4b85d53a823b48",
+    "semantic_hash": ""
+  },
+  "sw.js": {
+    "mtime": 1793600972.6832669,
+    "seen": 1793601496.5491977,
+    "ast_hash": "46f7b18995444c1e6ec115684a1e0e49",
+    "semantic_hash": ""
+  },
+  "apple-touch-icon.png": {
+    "mtime": 1793600948.331246,
+    "seen": 1793601496.5492163,
+    "ast_hash": "f437399e901762f028861b556b1faa62",
+    "semantic_hash": ""
+  },
+  "docs/screenshot-editor.png": {
+    "mtime": 1793601079.3822188,
+    "seen": 1793601496.5492177,
+    "ast_hash": "a6d36e4ee954a5bdd74ad4175fa747c1",
+    "semantic_hash": ""
+  },
+  "docs/screenshot-meme.png": {
+    "mtime": 1793601367.4027004,
+    "seen": 1793601496.5492191,
+    "ast_hash": "2bf6f40072f17946778a3b37be622765",
+    "semantic_hash": ""
+  },
+  "docs/screenshot-movil.png": {
+    "mtime": 1793601383.0435557,
+    "seen": 1793601496.5492203,
+    "ast_hash": "c1fb89e21f1431a0dcde6bd046f58ace",
+    "semantic_hash": ""
+  },
+  "icon-192.png": {
+    "mtime": 1793600948.3160663,
+    "seen": 1793601496.5492232,
+    "ast_hash": "fc7563aaa54846df01075b6f66b1e10c",
+    "semantic_hash": ""
+  },
+  "icon-512.png": {
+    "mtime": 1793600948.3282614,
+    "seen": 1793601496.5492244,
+    "ast_hash": "c5af6bafbd0d3373db1b275d7a241f4f",
     "semantic_hash": ""
   }
 }

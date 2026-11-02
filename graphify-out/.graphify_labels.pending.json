@@ -10,5 +10,6 @@
   "8": "Parar",
   "9": "app/build.gradle",
   "10": "android/build.gradle",
-  "11": "settings.gradle"
+  "11": "settings.gradle",
+  "12": "manifest.json"
 }
