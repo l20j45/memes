@@ -1,7 +1,7 @@
 # Graph Report - memes  (2026-11-02)
 
 ## Corpus Check
-- 68 files · ~52,882 words
+- 68 files · ~53,130 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 36 file(s) not represented in the graph (top: .xml 8, .bin 7, .properties 6)
 
@@ -11,7 +11,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `24ec99b1`
+- Built from commit: `7dcbd91e`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
