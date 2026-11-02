@@ -6,7 +6,10 @@
 services:
   memestudio:
     build: .
-    image: memestudio
+    # Imagen publicada en Docker Hub (multi-arch: amd64 PC + arm64 Raspberry
+    # Pi). Sin imagen local, `docker compose up -d` LA DESCARGA del registro;
+    # con `--build` recompila localmente y etiqueta con este mismo nombre.
+    image: l20j45/memestudio:latest
     container_name: memestudio
     restart: unless-stopped
     ports:

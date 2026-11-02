@@ -178,7 +178,10 @@ pip install -r requirements.txt
 # Configuración (opcional): copia la plantilla y edita a gusto
 cp .env.example .env
 
-# Arrancar (construye la imagen la primera vez)
+# Arrancar: la primera vez DESCARGA la imagen publicada en Docker Hub
+# (multi-arch) — no hace falta compilar nada
+docker compose up -d
+# Para COMPILAR el código local en vez de la imagen publicada:
 docker compose up -d --build
 ```
 
@@ -213,21 +216,34 @@ $env:REMBG_MODEL="u2netp"; docker compose up -d --build
 > [!NOTE]
 > En Raspberry Pi no hay que hacer nada especial: la imagen base `python:3.11-slim` es multi-arquitectura y Docker construye la versión ARM de forma nativa. Dentro del contenedor, `platform.machine()` sigue reportando `aarch64`, así que la selección automática de modelo (`u2netp`) funciona igual que fuera del contenedor.
 
-#### Publicar la imagen ya construida (Podman): PC + Raspberry Pi
+#### Imagen publicada en Docker Hub (descargar y correr)
 
-Si no quieres compilar en cada máquina, publica una imagen **multi-arquitectura** (manifest list `linux/amd64` + `linux/arm64`) y cada dispositivos descarga su capa:
+La imagen ya está publicada en `docker.io/l20j45/memestudio` como **manifest list multi-arquitectura**: `linux/amd64` (PC x64) `+ linux/arm64` (Raspberry Pi 4/5). Docker/Podman descarga automáticamente la capa que corresponda a tu arquitectura — no eliges nada:
+
+```bash
+docker pull l20j45/memestudio:latest     # o el tag de versión que toque (p. ej. :1.0)
+docker run -d --name memestudio -p 5005:5005 l20j45/memestudio:latest
+```
+
+Y con compose (ya apunta al registro; si no hay imagen local, `docker compose up -d` la baja solo):
+
+```bash
+docker compose up -d
+```
+
+En la Pi (con Docker o Podman, Raspberry Pi OS 64-bit) es idéntico — misma imagen, capa ARM.
+
+#### Publicar la imagen (Podman): PC + Raspberry Pi
+
+Si actualizas el código, publica una imagen **multi-arquitectura** actualizada:
 
 ```bash
 podman login docker.io                                   # o tu registro
-tools/podman_publish.sh docker.io/l20j45/memestudio:1.0  # build amd64+arm64 y push
+tools/podman_publish.sh docker.io/l20j45/memestudio:1.1  # build amd64+arm64 y push
+# tools/podman_publish.sh docker.io/l20j45/memestudio:1.1 --no-push  (solo build local)
 ```
 
-En la Raspberry Pi (4/5, Raspberry Pi OS 64-bit) o cualquier PC:
-
-```bash
-docker pull l20j45/memestudio:1.0
-docker compose up -d        # o docker run --rm -p 5005:5005 l20j45/memestudio:1.0
-```
+Cada arquitectura descarga su capa correspondiente al hacer pull: en el PC o en la Pi: `docker pull l20j45/memestudio:1.1`.
 
 ---
 
