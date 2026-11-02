@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Letra "M" estilizada sobre el fondo #0B1020 (color en ic_launcher_colors.xml) -->
+    <path
+        android:fillColor="#EDF2FF"
+        android:pathData="M30,76 L30,32 L36.5,32 L54,55 L71.5,32 L78,32 L78,76 L71,76 L71,43.5 L54,66 L37,43.5 L37,76 Z" />
+</vector>

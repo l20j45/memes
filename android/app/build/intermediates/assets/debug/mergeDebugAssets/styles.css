@@ -1,0 +1,78 @@
+:root{--bg:#0b1020;--panel:#121a2b;--panel-2:#171f2d;--soft:#1b2435;--ink:#edf2ff;--mut:#a9b3c8;--line:#273349;--acc:#7b93ff;--accw:#09111d;--ok:#23c088;--err:#ff6d6d;color-scheme:dark}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:radial-gradient(circle at top,#111a2d 0%,#0b1020 36%,#070d18 100%);color:var(--ink);font:500 14px/1.4 'Space Grotesk',system-ui,sans-serif;min-height:100vh}
+button,select,input,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 20px;background:rgba(13,18,29,.9);border-bottom:1px solid var(--line);backdrop-filter:blur(10px)}
+h1{margin:0;font:400 26px/1 'Anton',Impact,sans-serif;letter-spacing:.02em;color:var(--ink)}
+.acts{display:flex;gap:8px}
+.btn{border:1px solid var(--line);background:linear-gradient(180deg,#1a2436,#121b2b);border-radius:10px;padding:8px 14px;cursor:pointer;font-weight:700;transition:all .18s ease;color:var(--ink)}
+.btn:hover{border-color:var(--acc);transform:translateY(-1px);box-shadow:0 8px 20px rgba(123,147,255,.18)}
+.btn.pri{background:linear-gradient(180deg,#8aa0ff,#6d82f6);color:var(--accw);border-color:rgba(123,147,255,.7)}
+.btn.sm{padding:5px 10px;font-weight:500}
+.btn.pri.sm{font-weight:700}
+.btn.active{background:linear-gradient(180deg,#4a3d22,#2b2415);color:#fbbf24;border-color:rgba(245,158,11,.65)}
+.btn.active:hover{border-color:#f59e0b;box-shadow:0 8px 20px rgba(245,158,11,.18)}
+.btn:disabled{opacity:.4;cursor:not-allowed;border-color:var(--line)}
+.btn.loading{pointer-events:none}
+.btn.loading::after{content:'';display:inline-block;width:12px;height:12px;border:2px solid rgba(255,255,255,.25);border-top-color:var(--acc);border-radius:50%;margin-left:8px;vertical-align:middle;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+main{display:grid;grid-template-columns:minmax(0,1fr) 350px;gap:12px;padding:12px 16px;max-width:1460px;margin:0 auto}
+.stage{position:sticky;top:12px;align-self:start;display:flex;flex-direction:column;gap:8px}
+.cvw{display:flex;align-items:center;justify-content:center;min-height:300px;max-height:calc(100vh - 120px);border-radius:16px;border:1px solid var(--line);padding:10px;background:linear-gradient(180deg,#0e1627,#0b1220);box-shadow:inset 0 1px 0 rgba(255,255,255,.04)}
+#cv{max-width:100%;max-height:calc(100vh - 150px);cursor:grab;touch-action:none;box-shadow:0 8px 28px rgba(0,0,0,.45);background:#ffffff}
+#cv:active{cursor:grabbing}
+.hint{color:var(--mut);font-size:11px;text-align:center}
+.panel{display:flex;flex-direction:column;gap:10px}
+section{background:linear-gradient(180deg,#121b2d,#101827);border:1px solid var(--line);border-radius:12px;box-shadow:0 8px 18px rgba(2,6,23,.26), inset 0 1px 0 rgba(255,255,255,.02)}
+.accordion-head{width:100%;display:flex;align-items:center;justify-content:space-between;gap:8px;border:0;background:transparent;padding:10px 10px 8px;cursor:pointer;color:var(--ink);font:700 13px/1.2 'Space Grotesk',sans-serif;text-align:left}
+.accordion-body{display:flex;flex-direction:column;gap:8px;padding:0 10px 10px}
+.accordion-item.is-collapsed .accordion-body{display:none}
+.accordion-item.is-collapsed .chev{transform:rotate(-90deg)}
+.chev{display:inline-block;transition:transform .2s ease;color:var(--mut)}
+label{display:flex;flex-direction:column;gap:3px;color:var(--mut);font-size:11px}
+
+/* El atributo hidden pierde contra cualquier regla de autor con display
+   (la hoja del UA no gana nunca). Guard global: labels como #authPass2Row
+   antes se veian siempre (bug del modal de login). */
+[hidden]{display:none!important}
+.row{display:flex;gap:6px;align-items:end}.row>*{flex:1}
+.quick-cats{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}.quick-cats .btn{width:100%}
+.in{width:100%;background:var(--soft);border:1px solid var(--line);border-radius:8px;padding:7px 9px;color:var(--ink)}
+textarea.in{resize:vertical;min-height:52px}
+input[type=color]{width:100%;height:32px;padding:2px;border:1px solid var(--line);border-radius:8px;background:var(--soft);cursor:pointer}
+input[type=range]{width:100%;accent-color:var(--acc)}
+.rl{display:flex;justify-content:space-between}.rl b{color:var(--ink);font-weight:700}
+.tabs{display:flex;flex-wrap:wrap;gap:5px}
+.tab{border:1px solid var(--line);background:rgba(255,255,255,.02);border-radius:7px;padding:4px 8px;cursor:pointer;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink);font-size:12px}
+.tab[aria-pressed=true]{background:linear-gradient(180deg,#8aa0ff,#6d82f6);color:var(--accw);border-color:rgba(123,147,255,.7)}
+.tpl{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;padding:5px;border:1px solid var(--line);border-radius:10px;background:linear-gradient(180deg,#0f1727,#111b2d);}
+.tpl button{padding:0;border:2px solid var(--line);border-radius:8px;overflow:hidden;cursor:pointer;background:var(--bg);aspect-ratio:1;transition:all .18s ease}
+.tpl button:hover{border-color:var(--acc);transform:translateY(-1px);box-shadow:0 8px 18px rgba(123,147,255,.22)}
+.tpl canvas{width:100%;height:100%;display:block;object-fit:cover}
+.chk{flex-direction:row;align-items:center;gap:6px;color:var(--ink);font-size:13px;cursor:pointer}
+.chk input{accent-color:var(--acc);width:15px;height:15px}
+.note{margin:0;color:var(--mut);font-size:11px}
+.group-title{display:block;margin:12px 0 4px;padding:4px 0;border-top:1px solid rgba(255,255,255,.08);color:var(--mut);font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+#ictl{display:flex;flex-direction:column;gap:8px}#ictl[hidden]{display:none}
+.drop{position:fixed;inset:0;background:rgba(66,91,255,.72);color:#fff;display:none;align-items:center;justify-content:center;font:400 40px 'Anton',sans-serif;z-index:20;pointer-events:none}
+.drop.on{display:flex}
+#toast{position:fixed;left:50%;bottom:20px;transform:translate(-50%,30px);opacity:0;background:var(--ok);color:#fff;padding:10px 16px;border-radius:8px;font-weight:700;transition:.2s;z-index:30;pointer-events:none}
+#toast.show{transform:translate(-50%,0);opacity:1}#toast.err{background:var(--err)}
+.user-chip{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border:1px solid var(--line);border-radius:999px;background:rgba(255,255,255,.03);color:var(--mut);font-size:12px;font-weight:700;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.user-chip::before{content:'';width:7px;height:7px;border-radius:50%;background:var(--ok);flex:none}
+/* --- Login / registro ------------------------------------------------- */
+.auth-overlay{position:fixed;inset:0;z-index:40;display:flex;align-items:center;justify-content:center;background:rgba(4,8,16,.78);backdrop-filter:blur(6px);padding:16px}
+.auth-overlay[hidden]{display:none}
+.auth-card{width:100%;max-width:340px;background:linear-gradient(180deg,#131c2e,#0f1727);border:1px solid var(--line);border-radius:16px;padding:22px;box-shadow:0 24px 60px rgba(0,0,0,.55);display:flex;flex-direction:column;gap:12px}
+.auth-card h2{margin:0;font:400 24px/1 'Anton',Impact,sans-serif;color:var(--ink)}
+.auth-card .note{margin:0}
+.auth-tabs{display:flex;gap:4px;background:var(--soft);border:1px solid var(--line);border-radius:9px;padding:3px}
+.auth-tab{flex:1;border:0;background:transparent;border-radius:7px;padding:7px 0;cursor:pointer;color:var(--mut);font-weight:700;font-size:12.5px;transition:.15s}
+.auth-tab.is-active{background:linear-gradient(180deg,#8aa0ff,#6d82f6);color:var(--accw)}
+.auth-card form{display:flex;flex-direction:column;gap:10px}
+.auth-card .in{width:100%}
+.auth-error{margin:0;color:var(--err);font-size:12px;font-weight:600}
+.auth-card .btn{width:100%}
+@media (max-width:900px){main{grid-template-columns:1fr;padding:10px}.stage{top:0;z-index:5;background:var(--bg);padding:6px 0}.cvw{min-height:0;max-height:46vh;padding:6px}#cv{max-height:44vh}header{padding:10px}}

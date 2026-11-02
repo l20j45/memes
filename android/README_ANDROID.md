@@ -23,17 +23,27 @@ android/
 3. `Build > Build Bundle(s)/APK(s) > Build APK(s)`.
 4. El APK sale en `android/app/build/outputs/apk/debug/app-debug.apk`. Cópialo al móvil e instálalo (activa "orígenes desconocidos").
 
-### Opción B — Línea de comandos
+### Opción B — Línea de comandos (probada, sin Android Studio)
 
-Requiere Android SDK (`ANDROID_HOME`) y JDK 17. Como el repo no incluye el JAR del wrapper (binario), genera el wrapper una vez y compila:
+Requiere Android SDK (`android/local.properties` o `$ANDROID_HOME`) y JDK 17. El repo **no incluye el JAR del wrapper** ni el binario de Gradle, y el JDK embebido de Android Studio es JDK 25 (Gradle 8.7 lo rechaza), así que la receta completa en una Mac nueva es:
 
 ```bash
+# 1) JDK 17 (Temurin, tarball sin sudo) y Gradle 8.7 en ~/jdks
+mkdir -p ~/jdks && cd ~/jdks
+curl -sL -o jdk17.tgz 'https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.13%2B11/OpenJDK17U-jdk_aarch64_mac_hotspot_17.0.13_11.tar.gz'
+tar xzf jdk17.tgz && mv jdk-17.0.13+11 jdk17 && rm jdk17.tgz
+curl -sL -o gradle.tgz 'https://services.gradle.org/distributions/gradle-8.7-bin.zip'
+tar xzf gradle.tgz && rm gradle.tgz
+
+# 2) Compilar (script del repo encapsula todo)
+tools/build_apk.sh                 # APK debug
+#  o en un tirón manual:
 cd android
-gradle wrapper            # requiere un Gradle local (`choco install gradle` o manual)
-./gradlew assembleDebug
+JAVA_HOME=~/jdks/jdk17/Contents/Home ANDROID_HOME=~/Library/Android/sdk \
+  ~/jdks/gradle-8.7/bin/gradle assembleDebug --no-daemon
 ```
 
-El output es el mismo: `app/build/outputs/apk/debug/app-debug.apk`.
+El output es el mismo: `app/build/outputs/apk/debug/app-debug.apk` (firmada con el debug keystore autogenerado: instalable activando "orígenes desconocidos").
 
 ## Qué funciona y qué no dentro del móvil
 

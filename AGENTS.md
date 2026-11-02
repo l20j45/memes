@@ -170,7 +170,7 @@ El parser de esta versión **no extrae símbolos de archivos `.py` ni `.mjs`** (
 Graphify (v0.9.100) construye y mantiene el grafo de conocimiento **real** del proyecto con tree-sitter AST (sí compiló `server.py`, `app.mjs`, `tools/remove_bg.py`; respeta `.gitignore`, así que `.venv/` y `.kindex/` están excluidos). Almacena el grafo en modo local/offline; el código se parsea sin LLM.
 
 <!-- graphify-stats:start -->
-> Grafo actualizado automáticamente por Git hooks (tools/refresh_graph_docs.py): **682 nodos · 1444 aristas · 32 comunidades** · commit de extracción `fd3750267`. Detalles vivos: `graphify-out/GRAPH_REPORT.md` y `graph_stats` (MCP).
+> Grafo actualizado automáticamente por Git hooks (tools/refresh_graph_docs.py): **686 nodos · 1447 aristas · 41 comunidades** · commit de extracción `ef9af3b17`. Detalles vivos: `graphify-out/GRAPH_REPORT.md` y `graph_stats` (MCP).
 <!-- graphify-stats:end -->
 
 ### Configuración actual

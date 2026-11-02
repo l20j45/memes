@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Meme Studio Pro</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Comic+Neue:wght@700&family=Montserrat:wght@800&family=Oswald:wght@700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="./styles.css?v=6">
+<link rel="icon" type="image/png" href="./favicon.png?v=1">
+<link rel="manifest" href="./manifest.json">
+<link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
+<meta name="theme-color" content="#0b1020">
+<meta name="description" content="Estación de diseño de memes: capas de texto, quitar fondos con IA, emojis, marca de agua y exportación.">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+</head>
+<body>
+<header>
+  <h1>Meme Studio Pro</h1>
+  <div class="acts">
+    <span class="user-chip" id="userChip" hidden></span>
+    <button class="btn sm" id="logoutBtn" type="button" title="Cierra la sesion del servidor" hidden>Salir</button>
+    <button class="btn sm" id="undoBtn" type="button" title="Ctrl + Z">↶ Deshacer</button>
+    <button class="btn sm" id="redoBtn" type="button" title="Ctrl + Y">↷ Rehacer</button>
+    <button class="btn" id="copyBtn" type="button">Copiar</button>
+    <button class="btn pri" id="dlBtn" type="button" title="Ctrl + Enter">Descargar</button>
+  </div>
+</header>
+
+<main>
+  <div class="stage">
+    <div class="cvw"><canvas id="cv" aria-label="Vista previa del meme. Arrastra desde las 4 esquinas o los 4 bordes."></canvas></div>
+    <div class="hint">Arrastra 4 esquinas (escala uniforme) o 4 bordes (estirado vertical/horizontal). Atajos: Ctrl+Z / Ctrl+Y para deshacer/rehacer.</div>
+  </div>
+
+  <div class="panel">
+    <section class="accordion-item">
+      <button class="accordion-head" type="button" aria-expanded="true">
+        <span>Imagen Base</span>
+        <span class="chev">▾</span>
+      </button>
+      <div class="accordion-body">
+        <div class="row">
+          <button class="btn" id="upBtn" type="button">Subir imagen</button>
+          <button class="btn" id="pasteBtn" type="button">Pegar</button>
+          <button class="btn" id="resetBtn" type="button">Reiniciar</button>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <button class="btn sm pri" id="removeBgBtn" type="button">Quitar fondo</button>
+          <button class="btn sm" id="removeBgRealBtn" type="button">Quitar fondo real</button>
+          <button class="btn sm" id="eraseObjectBtn" type="button">Borrar objeto</button>
+        </div>
+        <input type="file" id="file" accept="image/*" multiple hidden>
+        <div class="row" style="margin-top:10px">
+          <button class="btn sm" id="alignH" type="button">Centrar ↔</button>
+          <button class="btn sm" id="alignV" type="button">Centrar ↕</button>
+        </div>
+        <label class="chk"><input type="checkbox" id="showGuides"> Mostrar guías de composición</label>
+        <div class="row">
+          <label>Proporción
+            <select class="in" id="ratio"><option value="orig">Según la imagen</option><option value="1080:1080">1:1 · 1080×1080</option><option value="1080:1350">4:5 Vertical · 1080×1350 (Instagram)</option><option value="1440:1080">4:3 Clásico · 1440×1080</option><option value="1920:1080">16:9 Panorámico · 1920×1080</option><option value="1080:1920">9:16 Vertical · 1080×1920 (TikTok/Reels)</option><option value="1080:2340">9:19.5 Full · 1080×2340 (TikTok pantalla completa)</option></select>
+          </label>
+          <label>Color de fondo<input type="color" id="bg" value="#ffffff"></label>
+        </div>
+        <label class="chk"><input type="checkbox" id="bgTransparent" checked> Fondo transparente (cuadrícula PNG)</label>
+        <div class="tabs" id="itabs" role="group" aria-label="Imágenes"></div>
+        <div id="ictl">
+          <label><span class="rl">Escala uniforme <b id="iszV"></b></span><input type="range" id="isz" min="5" max="300"></label>
+          <label><span class="rl">Ancho <b id="iwV"></b></span><input type="range" id="iw" min="5" max="300"></label>
+          <label><span class="rl">Alto <b id="ihV"></b></span><input type="range" id="ih" min="5" max="300"></label>
+
+          <label>Filtros de imagen
+            <select class="in" id="filterSel">
+              <option value="none">Sin filtro</option>
+              <option value="grayscale(100%)">Escala de grises</option>
+              <option value="contrast(170%) brightness(110%)">Alto contraste</option>
+              <option value="sepia(80%)">Sepia vintage</option>
+              <option value="deepfry">Deep Fry (Meme frito)</option>
+            </select>
+          </label>
+
+          <div class="row"><button class="btn sm" id="fitBtn" type="button">Encajar</button><button class="btn sm" id="coverBtn" type="button">Rellenar</button><button class="btn sm" id="stretchBtn" type="button">Estirar</button><button class="btn sm" id="shapeBtn" type="button">Forma original</button></div>
+          <div class="row" id="cropRow">
+            <button class="btn sm" id="cropBtn" type="button" aria-pressed="false">✂ Recortar</button>
+            <button class="btn sm pri" id="cropApply" type="button" hidden>Aplicar recorte</button>
+            <button class="btn sm" id="cropCancel" type="button" hidden>Cancelar</button>
+          </div>
+          <div class="row" id="cropShapeRow" hidden>
+            <button class="btn sm" id="cropShapeRect" type="button">▭ Rectángulo</button>
+            <button class="btn sm" id="cropShapePoly" type="button">✦ Nodos (polígono)</button>
+            <button class="btn sm" id="cropPolyUndo" type="button" hidden>– Quitar nodo</button>
+            <button class="btn sm" id="cropPolyClear" type="button" hidden>Limpiar nodos</button>
+          </div>
+          <label class="hint" id="cropHintPoly" hidden style="display:block;font-size:12px;color:var(--dim, #9aa3b8)">Modo nodos: click sobre la imagen añade un punto y lo puedes arrastrar. Arrastra un punto existente para moverlo; un punto sobre un borde lo reparte. Con 3+ puntos, arrastra dentro para desplazar todo el polígono.</label>
+          <div class="row"><button class="btn sm" id="frontBtn" type="button">Al frente</button><button class="btn sm" id="backBtn" type="button">Al fondo</button><button class="btn sm" id="idelBtn" type="button">Quitar imagen</button></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="accordion-item is-collapsed">
+      <button class="accordion-head" type="button" aria-expanded="false">
+        <span>Memes y plantillas</span>
+        <span class="chev">▾</span>
+      </button>
+      <div class="accordion-body">
+        <label>Plantillas integradas</label>
+        <div class="row quick-cats" style="margin-bottom:8px">
+          <button class="btn sm" data-template-set="classic" type="button">Clásicos</button>
+          <button class="btn sm" data-template-set="viral" type="button">Virales</button>
+          <button class="btn sm" data-template-set="cinematic" type="button">Cine</button>
+        </div>
+        <label>Buscar memes</label>
+        <div class="row" style="margin-bottom:8px">
+          <input class="in" id="memeSearch" type="text" placeholder="Busca un meme...">
+          <button class="btn sm pri" id="searchViralBtn" type="button">Buscar</button>
+        </div>
+        <div class="row" style="margin-bottom:8px">
+          <button class="btn sm pri" id="viralBtn" type="button">Memes virales</button>
+          <button class="btn sm pri" id="redditBtn" type="button">Reddit</button>
+        </div>
+        <div class="row" style="margin-bottom:8px;display:none" id="apiBaseRow">
+          <input class="in" id="apiBase" type="text" placeholder="Servidor IA: http://IP-PC:5005" inputmode="url">
+          <button class="btn sm" id="apiBaseSave" type="button">Guardar</button>
+        </div>
+        <div class="row" style="margin-bottom:8px;display:none;width:100%" id="draftRow">
+          <button class="btn sm" id="draftUp" type="button" title="Guarda el meme COMPLETO (imagen + capas + ajustes) en el servidor para continuar en otro dispositivo">☁ Subir borrador</button>
+          <button class="btn sm" id="draftDown" type="button" title="Restaura el borrador guardado en el servidor">↧ Traer borrador</button>
+        </div>
+        <div class="tpl" id="tpl"></div>
+      </div>
+    </section>
+
+    <section class="accordion-item is-collapsed">
+      <button class="accordion-head" type="button" aria-expanded="false">
+        <span>Limpiar meme</span>
+        <span class="chev">▾</span>
+      </button>
+      <div class="accordion-body">
+        <label class="chk"><input type="checkbox" id="cleanOn"> Modo borrador: pintar sobre la imagen</label>
+        <label><span class="rl">Tamaño del pincel <b id="brushV"></b></span><input type="range" id="brush" min="5" max="120" value="35"></label>
+        <label class="chk"><input type="checkbox" id="onlyText" checked> Solo texto blanco/negro dentro del trazo</label>
+        <div class="row">
+          <button class="btn sm pri" id="cleanBtn" type="button">Borrar lo pintado</button>
+          <button class="btn sm" id="clearMask" type="button">Quitar trazo</button>
+        </div>
+        <button class="btn sm" id="cropBarsBtn" type="button">Quitar barra de texto (arriba/abajo)</button>
+        <p class="note">Pinta sin precisión sobre el texto y pulsa «Borrar lo pintado». Si el texto no es blanco o negro, desmarca la casilla y pinta ajustado. Cada limpieza se puede deshacer con Ctrl+Z.</p>
+      </div>
+    </section>
+
+    <section class="accordion-item is-collapsed">
+      <button class="accordion-head" type="button" aria-expanded="false">
+        <span>Texto y Estilo</span>
+        <span class="chev">▾</span>
+      </button>
+      <div class="accordion-body">
+        <div class="tabs" id="tabs" role="group" aria-label="Capas de texto"></div>
+        <label>Contenido
+          <textarea class="in" id="txt" placeholder="Escribe aquí..."></textarea>
+        </label>
+        <label class="chk"><input type="checkbox" id="lockLayer"> Bloquear capa</label>
+        <div class="row">
+          <button class="btn sm" id="addBtn" type="button">+ Añadir texto</button>
+          <button class="btn sm" id="dupBtn" type="button">Duplicar</button>
+          <button class="btn sm" id="delBtn" type="button">Eliminar</button>
+          <button class="btn sm" id="clearTextBtn" type="button">Sin texto</button>
+        </div>
+        <div class="row">
+          <button class="btn sm" id="alignLeftBtn" type="button">Izq</button>
+          <button class="btn sm" id="alignCenterBtn" type="button">Centro</button>
+          <button class="btn sm" id="alignRightBtn" type="button">Der</button>
+        </div>
+        <label class="chk"><input type="checkbox" id="upper" checked> Todo en mayúsculas</label>
+
+        <label class="group-title">Estilo</label>
+        <div class="row" id="presets">
+          <button class="btn sm" data-p="classic" type="button">Clásico</button>
+          <button class="btn sm" data-p="modern" type="button">Moderno</button>
+          <button class="btn sm" data-p="neon" type="button">Neón</button>
+          <button class="btn sm" data-p="bar" type="button">Barra</button>
+        </div>
+        <label>Tipografía
+          <select class="in" id="font">
+            <option value="Impact">Impact</option><option value="Anton">Anton</option><option value="Oswald">Oswald</option>
+            <option value="Montserrat">Montserrat</option><option value="Comic">Comic</option><option value="Arial">Arial</option>
+          </select>
+        </label>
+        <div class="row">
+          <label>Relleno<input type="color" id="fill"></label>
+          <label>Borde<input type="color" id="stroke"></label>
+          <label>Sombra<input type="color" id="shadowColor"></label>
+        </div>
+        <div class="row">
+          <label>Opacidad<input type="range" id="opacity" min="0.1" max="1" step="0.05"></label>
+        </div>
+        <label><span class="rl">Tamaño <b id="sizeV"></b></span><input type="range" id="size" min="16" max="140"></label>
+        <label><span class="rl">Grosor de borde <b id="swV"></b></span><input type="range" id="sw" min="0" max="30"></label>
+        <label><span class="rl">Sombra <b id="shadowV"></b></span><input type="range" id="shadowBlur" min="0" max="30"></label>
+        <label><span class="rl">Barra superior <b id="barV"></b></span><input type="range" id="bar" min="0" max="50"></label>
+      </div>
+    </section>
+
+    <section class="accordion-item is-collapsed">
+      <button class="accordion-head" type="button" aria-expanded="false">
+        <span>Marca de Agua y Exportación</span>
+        <span class="chev">▾</span>
+      </button>
+      <div class="accordion-body">
+        <label class="chk"><input type="checkbox" id="wmCheck"> Mostrar marca de agua</label>
+        <label class="chk"><input type="checkbox" id="wmLock"> Bloquear marca de agua</label>
+        <div class="row" style="margin-bottom:8px">
+          <button class="btn sm" data-wm-preset="corner" type="button">Esquina</button>
+          <button class="btn sm" data-wm-preset="center" type="button">Centro</button>
+          <button class="btn sm" data-wm-preset="subtle" type="button">Sutil</button>
+        </div>
+        <div class="row" style="margin-bottom:8px">
+          <label class="chk"><input type="radio" name="wmMode" id="wmModeText" value="text" checked> Texto</label>
+          <label class="chk"><input type="radio" name="wmMode" id="wmModeImg" value="img"> Imagen (logo)</label>
+        </div>
+
+        <div id="wmTextUI">
+          <input type="text" class="in" id="wmText" value="miweb.com" placeholder="Texto de tu web">
+          <label><span class="rl">Tamaño <b id="wmSizeV">28px</b></span><input type="range" id="wmSize" min="12" max="120" value="28"></label>
+          <div class="row">
+            <label>Texto<input type="color" id="wmFill" value="#ffffff"></label>
+            <label>Borde<input type="color" id="wmStroke" value="#0b1220"></label>
+            <label>Sombra<input type="color" id="wmShadow" value="#000000"></label>
+          </div>
+        </div>
+
+        <div id="wmImgUI" hidden>
+          <label><span class="rl">Ancho del logo <b id="wmImgWV">18%</b></span><input type="range" id="wmImgW" min="5" max="60" step="1" value="18"></label>
+          <div class="row" style="margin-bottom:8px">
+            <button class="btn sm" id="wmLogoBtn" type="button">📁 Logo…</button>
+            <button class="btn sm" id="wmLogoClear" type="button">Quitar logo</button>
+          </div>
+          <input type="file" id="wmLogoFile" accept="image/png,image/webp,image/jpeg" hidden>
+          <label class="hint" style="display:block;font-size:12px;color:var(--dim, #9aa3b8);margin-bottom:8px">Consejo: usa un PNG con transparencia (tu logo); la opacidad y los deslizadores de posición funcionan igual que en el modo Texto.</label>
+        </div>
+
+        <div class="row">
+          <label>Pos X <b id="wmXV">82%</b><input type="range" id="wmX" min="0" max="100" value="82"></label>
+          <label>Pos Y <b id="wmYV">92%</b><input type="range" id="wmY" min="0" max="100" value="92"></label>
+        </div>
+        <label><span class="rl">Opacidad <b id="wmOpacityV">0.80</b></span><input type="range" id="wmOpacity" min="0.1" max="1" step="0.05" value="0.8"></label>
+        <label><span class="rl">Desenfoque <b id="wmBlurV">0px</b></span><input type="range" id="wmBlur" min="0" max="18" step="1" value="0"></label>
+        <label><span class="rl">Sombra <b id="wmShadowBlurV">0px</b></span><input type="range" id="wmShadowBlur" min="0" max="30" step="1" value="0"></label>
+
+        <label style="margin-top:8px">Formato de descarga
+          <select class="in" id="fmt">
+            <option value="image/png">PNG (máxima calidad)</option>
+            <option value="image/jpeg">JPG (más ligero)</option>
+            <option value="image/webp">WebP (ligero y nítido)</option>
+          </select>
+        </label>
+        <label>Resolución de exportación
+          <select class="in" id="exportPreset">
+            <option value="original">Original</option>
+            <option value="1080x1080">1080 × 1080</option>
+            <option value="1200x1200">1200 × 1200</option>
+            <option value="1080x1920">1080 × 1920</option>
+            <option value="1920x1080">1920 × 1080</option>
+          </select>
+        </label>
+      </div>
+    </section>
+  </div>
+</main>
+
+<div class="drop" id="drop">Suelta tu imagen aquí</div>
+
+<!-- Login / registro: si el servidor exige cuenta (REQUIRE_LOGIN=1) este
+     modal es obligatorio; si no, el usuario puede entrar igual desde el chip -->
+<div class="auth-overlay" id="authOverlay" hidden>
+  <div class="auth-card" role="dialog" aria-modal="true" aria-labelledby="authTitle">
+    <h2 id="authTitle">Inicia sesión</h2>
+    <p id="authNote" class="note">Accede para guardar tus borradores en el servidor y sincronizarlos entre dispositivos.</p>
+    <div class="auth-tabs" role="tablist">
+      <button class="auth-tab is-active" id="authTabLogin" type="button" role="tab">Entrar</button>
+      <button class="auth-tab" id="authTabRegister" type="button" role="tab">Crear cuenta</button>
+    </div>
+    <form id="authForm" autocomplete="on">
+      <label>Usuario
+        <input type="text" class="in" id="authUser" autocomplete="username" required maxlength="24" placeholder="tu-nombre">
+      </label>
+      <label>Contraseña
+        <input type="password" class="in" id="authPass" autocomplete="current-password" required minlength="8" placeholder="mínimo 8 caracteres">
+      </label>
+      <label id="authPass2Row" hidden>Repite la contraseña
+        <input type="password" class="in" id="authPass2" autocomplete="new-password" minlength="8" placeholder="repite la contraseña">
+      </label>
+      <p class="auth-error" id="authError" hidden></p>
+      <button class="btn pri" id="authSubmit" type="submit">Entrar</button>
+    </form>
+  </div>
+</div>
+
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script type="module" src="./app.mjs?v=16"></script>
+</body>
+</html>
