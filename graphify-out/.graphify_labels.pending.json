@@ -11,5 +11,11 @@
   "9": "app/build.gradle",
   "10": "android/build.gradle",
   "11": "settings.gradle",
-  "12": "manifest.json"
+  "12": "manifest.json",
+  "13": "meme_search_reddit",
+  "14": "get",
+  "15": "_auth_gate",
+  "16": "remove_bg",
+  "17": "_reddit_populate_cache",
+  "18": "_load_dotenv"
 }

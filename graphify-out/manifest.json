@@ -1,14 +1,14 @@
 {
   "app.mjs": {
-    "mtime": 1793601143.8613997,
-    "seen": 1793601496.5491865,
-    "ast_hash": "9400157e6f9e825ca6190b997b7961c3",
+    "mtime": 1793602007.304976,
+    "seen": 1793602278.4187415,
+    "ast_hash": "fa891af7d18d1057051c19fe79bafae5",
     "semantic_hash": ""
   },
   "server.py": {
-    "mtime": 1793600624.760459,
-    "seen": 1793600758.4268215,
-    "ast_hash": "1dc7fa31eb983c9c4b66e64bafed1725",
+    "mtime": 1793602047.0562592,
+    "seen": 1793602278.4187584,
+    "ast_hash": "b7acab3378669e6e54512e6fb0f0e1db",
     "semantic_hash": ""
   },
   "tools/remove_bg.py": {
@@ -24,15 +24,15 @@
     "semantic_hash": ""
   },
   "AGENTS.md": {
-    "mtime": 1793601504.460446,
-    "seen": 1793601506.680133,
-    "ast_hash": "342c961c2985847a7e26aaa8dd94ad4c",
+    "mtime": 1793602281.213798,
+    "seen": 1793602281.4439876,
+    "ast_hash": "e6de8c7a80ffd4b57a7e520e9903a6ad",
     "semantic_hash": ""
   },
   "README.md": {
-    "mtime": 1793601482.4715812,
-    "seen": 1793601496.5492036,
-    "ast_hash": "fe0c6ad1f00728e4595fc55bf8a7a21c",
+    "mtime": 1793602208.7594433,
+    "seen": 1793602278.4188023,
+    "ast_hash": "0a537b2ff1abdcf272ebc565f251ce41",
     "semantic_hash": ""
   },
   "index.html": {
@@ -42,9 +42,9 @@
     "semantic_hash": ""
   },
   "memegnerator.html": {
-    "mtime": 1793600982.7762086,
-    "seen": 1793601496.5492122,
-    "ast_hash": "13dd5f8bee8011df375b22f27ed598f3",
+    "mtime": 1793602011.391403,
+    "seen": 1793602278.4188282,
+    "ast_hash": "d8c4976864ba690cc7afafef507b2487",
     "semantic_hash": ""
   },
   "requirements.txt": {
@@ -54,9 +54,9 @@
     "semantic_hash": ""
   },
   "docker-compose.yml": {
-    "mtime": 1793600631.6704319,
-    "seen": 1793600758.426816,
-    "ast_hash": "035caa4fb137233750489b67f2db2316",
+    "mtime": 1793602040.925855,
+    "seen": 1793602278.418745,
+    "ast_hash": "4199864c15b78d938bd81161d195ee2f",
     "semantic_hash": ""
   },
   "tools/refresh_graph_docs.py": {
@@ -72,9 +72,9 @@
     "semantic_hash": ""
   },
   "android/app/src/main/assets/app.mjs": {
-    "mtime": 1793601143.8613997,
-    "seen": 1793601496.5491738,
-    "ast_hash": "9400157e6f9e825ca6190b997b7961c3",
+    "mtime": 1793602007.304976,
+    "seen": 1793602278.4187198,
+    "ast_hash": "fa891af7d18d1057051c19fe79bafae5",
     "semantic_hash": ""
   },
   "android/app/src/main/java/com/memestudiopro/app/MainActivity.kt": {
@@ -96,9 +96,9 @@
     "semantic_hash": ""
   },
   "android/README_ANDROID.md": {
-    "mtime": 1793599940.56813,
-    "seen": 1793600318.3811285,
-    "ast_hash": "cf4404196d8425a93a2f3561b8b867c9",
+    "mtime": 1793602260.6058264,
+    "seen": 1793602278.4188123,
+    "ast_hash": "8f431527fc1f410cb14025f14e55c906",
     "semantic_hash": ""
   },
   "android/app/src/main/assets/index.html": {
@@ -108,9 +108,9 @@
     "semantic_hash": ""
   },
   "android/app/src/main/assets/memegnerator.html": {
-    "mtime": 1793600982.7762086,
-    "seen": 1793601496.549209,
-    "ast_hash": "13dd5f8bee8011df375b22f27ed598f3",
+    "mtime": 1793602011.391403,
+    "seen": 1793602278.418822,
+    "ast_hash": "d8c4976864ba690cc7afafef507b2487",
     "semantic_hash": ""
   },
   "android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png": {
