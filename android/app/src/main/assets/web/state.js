@@ -15,6 +15,8 @@ export const state = {
   drag: null,
   raf: 0,
   cleanOn: false,
+  cropOn: false,
+  cropRect: null,
   guides: false,
   history: [],
   hIndex: -1,

@@ -37,6 +37,7 @@
 ### 🖼️ Composición y Edición de Imágenes
 - **Capas Múltiples:** Sube, pega desde el portapapeles o arrastra cualquier cantidad de imágenes (`PNG`, `JPG`, `WebP`, etc.).
 - **Transformación Libre:** 8 manejadores interactivos (4 esquinas para escala uniforme y 4 bordes para deformación/estiramiento horizontal y vertical).
+- **Modo Recorte:** ✂ Recorta cualquier imagen subida o pegada para reutilizarla: marco interactivo con guías de tercios y oscurecido de lo descartado; "Aplicar" hornea el recorte manteniendo lo visible exactamente en su sitio (también recorta la máscara del borrador).
 - **Ajustes Rápidos:** Botones de encajar (*Fit*), rellenar (*Cover*), estirar (*Stretch*) y volver a la proporción original (*Original Shape*).
 - **Filtros Gráficos:** Efectos integrados en tiempo real (Escala de grises, Alto contraste, Sepia vintage y *Deep Fry* meme frito).
 - **Composición:** Opciones para cambiar relación de aspecto (1:1, 4:5, 4:3, 16:9, 9:16) y color de fondo.
@@ -351,6 +352,7 @@ REQUIRE_LOGIN=1
 - **4 Esquinas:** Escala uniforme proporcional.
 - **4 Bordes laterales/verticales:** Estiramiento individual de ancho o alto.
 - **Modo Limpiar (Borrador):** Pinta con el pincel sobre marcas de agua o texto no deseado y presiona **«Borrar lo pintado»**.
+- **Modo Recorte (✂):** "Recortar" en el panel de imágenes: ajusta el marco naranja (handles y guías de tercios, como el escalado) y confirma con **«Aplicar recorte»**; el marco se re-arma para volver a recortar la misma capa.
 
 ### Autoguardado:
 - Cada acción (arrastrar, pintar, cambiar textos/estilos…) escribe el borrador en `localStorage` ~1.2s después de parar de interactuar, además de al minimizar o cerrar la pestaña. Al reabrir, el borrador se restaura solo.
