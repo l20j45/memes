@@ -1,17 +1,17 @@
 # Graph Report - memes  (2026-11-02)
 
 ## Corpus Check
-- 64 files · ~43,500 words
+- 64 files · ~45,051 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 19 file(s) not represented in the graph (top: .xml 7, (none) 5, .css 2)
 
 ## Summary
-- 643 nodes · 1356 edges · 39 communities (22 shown, 17 thin omitted)
+- 647 nodes · 1370 edges · 30 communities (16 shown, 14 thin omitted)
 - Extraction: 98% EXTRACTED · 2% INFERRED · 0% AMBIGUOUS · INFERRED: 22 edges (avg confidence: 0.92)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `a3c2be35`
+- Built from commit: `26aa27d8`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -25,28 +25,19 @@
 - memestudio
 - install_graphify_hooks.sh
 - Parar
-- auth.py
 - create_app.py
-- account_sqlite.py
-- create_app
+- create_app.py
+- auth.py
+- auth_support.py
 - config.py
 - assets/manifest.json
 - public/manifest.json
 - test_app_auth_flow.py
 - FileDraftStore
-- ArcticShiftRedditCatalog
 - graphify
 - pathlib
 - RembgBackgroundMasker
-- users.py
-- BackgroundMasker
-- Meme Studio Pro — Aplicación Android (APK)
-- ports/__init__.py
-- Meme Studio Pro - Directrices y Contexto para Agentes (AGENTS.md)
-- refresh_graph_docs.py
-- graph_stats
-- 🔌 API del Backend
-- 🤖 Documentación y Contexto para Agentes de IA
+- meme_catalogs.py
 
 ## God Nodes (most connected - your core abstractions)
 1. `initEvents()` - 35 edges
@@ -63,27 +54,27 @@
 ## Surprising Connections (you probably didn't know these)
 - `Conectar un agente al grafo (resumen)` --references--> `graph_stats()`  [INFERRED]
   README.md → tools/refresh_graph_docs.py
+- `Herramientas MCP (prefijo `graphify_`)` --references--> `graph_stats()`  [INFERRED]
+  AGENTS.md → tools/refresh_graph_docs.py
 - `Conectarse al grafo por MCP (otros agentes y clientes)` --references--> `graph_stats()`  [INFERRED]
   AGENTS.md → tools/refresh_graph_docs.py
-- `Herramientas MCP (prefijo `graphify_`)` --references--> `graph_stats()`  [INFERRED]
+- `📊 Graphify — Grafo de Conocimiento del Código (contexto primario)` --references--> `graph_stats()`  [INFERRED]
   AGENTS.md → tools/refresh_graph_docs.py
 - `🔍 Diagnóstico y Correcciones Recomendadas` --references--> `remove_bg()`  [INFERRED]
   README.md → memestudio/app/routers/images.py
-- `📊 Graphify — Grafo de Conocimiento del Código (contexto primario)` --references--> `graph_stats()`  [INFERRED]
-  AGENTS.md → tools/refresh_graph_docs.py
 
 ## Import Cycles
 - None detected.
 
-## Communities (39 total, 17 thin omitted)
+## Communities (30 total, 14 thin omitted)
 
 ### Community 0 - "meme_catalogs.py"
-Cohesion: 0.06
-Nodes (19): ImageProxy, WrongImageSource, _http_json(), ImgflipCatalog, build_draft_router(), draft_download(), draft_upload(), build_imgflip_router() (+11 more)
+Cohesion: 0.11
+Nodes (12): ImageProxy, WrongImageSource, build_imgflip_router(), meme_search(), build_reddit_router(), meme_search_reddit(), match_score(), normalize() (+4 more)
 
 ### Community 1 - "public/app.mjs"
 Cohesion: 0.06
-Nodes (93): addImage(), appendTemplateSet(), applyClean(), applyCrop(), applyRatio(), applyWatermarkPreset(), authErrorMessage(), bindAccordions() (+85 more)
+Nodes (95): addImage(), appendTemplateSet(), applyClean(), applyCrop(), applyRatio(), applyWatermarkPreset(), authErrorMessage(), bindAccordions() (+87 more)
 
 ### Community 2 - "extract_subject"
 Cohesion: 0.14
@@ -91,7 +82,7 @@ Nodes (9): BackgroundMasker, CropBox, extract_subject(), SubjectNotDetected, Fak
 
 ### Community 3 - "assets/app.mjs"
 Cohesion: 0.06
-Nodes (93): addImage(), appendTemplateSet(), applyClean(), applyCrop(), applyRatio(), applyWatermarkPreset(), authErrorMessage(), bindAccordions() (+85 more)
+Nodes (95): addImage(), appendTemplateSet(), applyClean(), applyCrop(), applyRatio(), applyWatermarkPreset(), authErrorMessage(), bindAccordions() (+87 more)
 
 ### Community 5 - "Meme Studio Pro 🎭"
 Cohesion: 0.11
@@ -102,23 +93,23 @@ Cohesion: 0.10
 Nodes (19): interval, retries, start_period, test, timeout, build, container_name, environment (+11 more)
 
 ### Community 8 - "Parar"
-Cohesion: 0.13
-Nodes (15): remove_bg(), 2. Servidor Local sin Docker (desarrollo), 3. Frontend Independiente (Obsoleto), 4. Script CLI Independiente, 5. Ejecución en Raspberry Pi (o ARM), 6. App Android (APK), 🔐 Acceso con usuario y contraseña, Autoguardado: (+7 more)
+Cohesion: 0.04
+Nodes (45): Comandos, 🛠️ Comandos de Desarrollo Frecuentes, Configuración actual, 🧠 Flujo de Datos y Estado Global (`app.mjs`), ⚠️ Invariantes Críticos y Peculiaridades (Gotchas), 🗂️ KIndex — Índice de Conocimiento de Código (contexto secundario), ⚠️ Limitación crítica conocida (v1.1.0), 🏗️ Mapa de Archivos y Responsabilidades (+37 more)
 
-### Community 12 - "auth.py"
-Cohesion: 0.16
-Nodes (9): clear_session_cookie(), client_ip(), set_session_cookie(), RateLimitExceeded, AuthIn, build_auth_router(), login(), logout() (+1 more)
+### Community 12 - "create_app.py"
+Cohesion: 0.20
+Nodes (3): create_app(), _env_tuple(), RateLimiter
 
-### Community 14 - "account_sqlite.py"
-Cohesion: 0.13
-Nodes (5): _connect(), InitializationError, SqliteAccountRepository, SqliteSessionStore, UsernameTaken
+### Community 14 - "auth.py"
+Cohesion: 0.06
+Nodes (25): _connect(), InitializationError, SqliteAccountRepository, SqliteSessionStore, clear_session_cookie(), client_ip(), set_session_cookie(), RateLimitExceeded (+17 more)
 
-### Community 15 - "create_app"
-Cohesion: 0.13
-Nodes (7): check_basic_auth(), ensure_same_origin(), session_user(), create_app(), auth_gate(), _env_tuple(), SessionStore
+### Community 15 - "auth_support.py"
+Cohesion: 0.06
+Nodes (8): check_basic_auth(), ensure_same_origin(), session_user(), auth_gate(), BackgroundMasker, DraftStore, SessionStore, UserRepository
 
 ### Community 16 - "config.py"
-Cohesion: 0.18
+Cohesion: 0.20
 Nodes (4): _load_dotenv(), load_settings(), _parse_auth_users(), _truthy()
 
 ### Community 17 - "assets/manifest.json"
@@ -137,51 +128,27 @@ Nodes (9): Settings, _client(), _settings(), test_csrf_rechaza_origin_ajeno(), t
 Cohesion: 0.29
 Nodes (6): command, type, mcp, servers, $schema, graphify
 
-### Community 30 - "users.py"
-Cohesion: 0.20
-Nodes (10): _ensure_re(), hash_password(), validate_credentials(), verify_password(), test_hash_corrupto_no_infla_la_excepcion(), test_hash_sal_unica(), test_hash_verificado_roundtrip(), test_password_invalido() (+2 more)
-
-### Community 32 - "Meme Studio Pro — Aplicación Android (APK)"
-Cohesion: 0.17
-Nodes (9): Actualizar el frontend de la app, Compilar el APK, Meme Studio Pro — Aplicación Android (APK), Notas técnicas, Opción A — Android Studio (recomendada), Opción B — Línea de comandos, Qué funciona y qué no dentro del móvil, Servidor IA opcional (quitar fondo real en Android) (+1 more)
-
-### Community 34 - "Meme Studio Pro - Directrices y Contexto para Agentes (AGENTS.md)"
-Cohesion: 0.20
-Nodes (10): Comandos, 🛠️ Comandos de Desarrollo Frecuentes, Configuración actual, 🧠 Flujo de Datos y Estado Global (`app.mjs`), ⚠️ Invariantes Críticos y Peculiaridades (Gotchas), 🗂️ KIndex — Índice de Conocimiento de Código (contexto secundario), ⚠️ Limitación crítica conocida (v1.1.0), 🏗️ Mapa de Archivos y Responsabilidades (+2 more)
-
-### Community 35 - "refresh_graph_docs.py"
-Cohesion: 0.33
-Nodes (3): main(), render(), wait_for_change()
-
-### Community 36 - "graph_stats"
-Cohesion: 0.38
-Nodes (7): CLI equivalente (útil para scripts), Conectarse al grafo por MCP (otros agentes y clientes), Configuración actual, 📊 Graphify — Grafo de Conocimiento del Código (contexto primario), Herramientas MCP (prefijo `graphify_`), Regla de uso para agentes, graph_stats()
-
-### Community 37 - "🔌 API del Backend"
-Cohesion: 0.29
-Nodes (7): 🔌 API del Backend, `GET /api/meme-image`, `GET /api/meme-search`, `GET /api/meme-search-reddit`, `GET /health`, `POST /api/draft` / `GET /api/draft`, `POST /api/remove-bg`
-
-### Community 38 - "🤖 Documentación y Contexto para Agentes de IA"
-Cohesion: 0.50
-Nodes (4): Automatización por hooks de Git, Conectar un agente al grafo (resumen), 🤖 Documentación y Contexto para Agentes de IA, ¿Qué provisiona el repo?
+### Community 35 - "meme_catalogs.py"
+Cohesion: 0.06
+Nodes (18): CLI equivalente (útil para scripts), Conectarse al grafo por MCP (otros agentes y clientes), Configuración actual, 📊 Graphify — Grafo de Conocimiento del Código (contexto primario), Herramientas MCP (prefijo `graphify_`), Regla de uso para agentes, ArcticShiftRedditCatalog, _http_json() (+10 more)
 
 ## Knowledge Gaps
-- **17 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **14 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `Parar` connect `Parar` to `Meme Studio Pro — Aplicación Android (APK)`, `🔌 API del Backend`, `🤖 Documentación y Contexto para Agentes de IA`?**
-  _High betweenness centrality (0.076) - this node is a cross-community bridge._
+- **Why does `remove_bg()` connect `Parar` to `extract_subject`, `create_app.py`?**
+  _High betweenness centrality (0.068) - this node is a cross-community bridge._
 - **Are the 3 inferred relationships involving `create_app()` (e.g. with `InitializationError` and `.init_schema()`) actually correct?**
   _`create_app()` has 3 INFERRED edges - model-reasoned connections that need verification._
 - **Should `meme_catalogs.py` be split into smaller, more focused modules?**
-  _Cohesion score 0.056107539450613676 - nodes in this community are weakly interconnected._
-- **Why does `remove_bg()` connect `Parar` to `extract_subject`, `create_app.py`?**
-  _High betweenness centrality (0.069) - this node is a cross-community bridge._
+  _Cohesion score 0.10685483870967742 - nodes in this community are weakly interconnected._
+- **Why does `build_image_router()` connect `create_app.py` to `Parar`, `extract_subject`, `create_app.py`?**
+  _High betweenness centrality (0.067) - this node is a cross-community bridge._
 - **Should `public/app.mjs` be split into smaller, more focused modules?**
-  _Cohesion score 0.06074766355140187 - nodes in this community are weakly interconnected._
-- **Why does `build_image_router()` connect `create_app.py` to `Parar`, `extract_subject`, `create_app`?**
-  _High betweenness centrality (0.068) - this node is a cross-community bridge._
+  _Cohesion score 0.059716430358632194 - nodes in this community are weakly interconnected._
 - **Should `extract_subject` be split into smaller, more focused modules?**
   _Cohesion score 0.14130434782608695 - nodes in this community are weakly interconnected._
+- **Should `assets/app.mjs` be split into smaller, more focused modules?**
+  _Cohesion score 0.06263736263736264 - nodes in this community are weakly interconnected._
