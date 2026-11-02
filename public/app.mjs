@@ -223,6 +223,8 @@ async function loadState(idx) {
   }));
 
   state.isel = clamp(state.isel, 0, Math.max(0, state.imgs.length - 1));
+  state.cropOn = false;   // el recorte es transitorio: el restore lo desactiva
+  state.cropRect = null;
   cv.style.cursor = state.cleanOn ? 'crosshair' : 'default';
   normalizeSelection();
   sync();
@@ -234,6 +236,7 @@ function setSelection(nextK, nextIndex) {
   state.selK = nextK;
   if (nextK === 'txt') state.sel = nextIndex;
   if (nextK === 'img') state.isel = nextIndex;
+  if (state.cropOn) state.cropRect = { x: 0, y: 0, w: 1, h: 1 }; // recorte se re-arma sobre la NUEVA capa
   sync();
   schedule();
 }
@@ -355,7 +358,7 @@ function draw(exp = false) {
     cx.fillText('Sube, pega o suelta una imagen', W / 2, bh + state.art.h / 2);
   }
 
-  if (!exp && state.selK === 'img' && state.imgs[state.isel] && !state.cleanOn) {
+  if (!exp && state.selK === 'img' && state.imgs[state.isel] && !state.cleanOn && !state.cropOn) {
     const b = state.imgs[state.isel].box;
     const u = Math.max(2, W / 380);
     const hs = u * 6;
@@ -373,6 +376,10 @@ function draw(exp = false) {
       cx.strokeRect(hx - hs, hy - hs, hs * 2, hs * 2);
     });
     cx.restore();
+  }
+
+  if (!exp && state.cropOn && state.selK === 'img') {
+    drawCropOverlay(W);
   }
 
   if (state.guides && !exp) {
@@ -503,6 +510,161 @@ function getHandle(p, b, k) {
   return null;
 }
 
+// --- Modo recorte (herramienta por capa de imagen) ---------------------------
+// state.cropRect es un rect en FRACCIONES del origen de la capa (0..1). Es
+// no destructivo: mientras se ajusta se ve la imagen completa con la zona
+// descartada atenuada. "Aplicar" hornea el recorte en m.c (y recorta la
+// máscara del borrador con las mismas fracciones) y ajusta x/y/w/sy para que
+// lo visible NO se mueva en el lienzo.
+
+function syncCropUI() {
+  const m = state.imgs[state.isel];
+  const btn = $('#cropBtn');
+  const apply = $('#cropApply');
+  const cancel = $('#cropCancel');
+  if (!btn) return;
+  const on = state.cropOn && !!m;
+  btn.hidden = !m;
+  btn.classList.toggle('active', on);
+  btn.setAttribute('aria-pressed', String(on));
+  apply.hidden = !on;
+  cancel.hidden = !on;
+}
+
+function cropScreenRect(m) {
+  const b = m.box;
+  const r = state.cropRect || { x: 0, y: 0, w: 1, h: 1 };
+  return { x: b.x + r.x * b.w, y: b.y + r.y * b.h, w: r.w * b.w, h: r.h * b.h };
+}
+
+function drawCropOverlay(W) {
+  const m = state.imgs[state.isel];
+  if (!m || !m.box) return;
+  const cr = cropScreenRect(m);
+  const u = Math.max(2, W / 380);
+  const hs = u * 6;
+  cx.save();
+
+  // atenuar la zona descartada (fuera del rect, dentro de la capa)
+  cx.fillStyle = 'rgba(8, 10, 18, .62)';
+  [
+    [m.box.x, m.box.y, cr.x - m.box.x, m.box.h],
+    [cr.x + cr.w, m.box.y, (m.box.x + m.box.w) - (cr.x + cr.w), m.box.h],
+    [cr.x, m.box.y, cr.w, cr.y - m.box.y],
+    [cr.x, cr.y + cr.h, cr.w, (m.box.y + m.box.h) - (cr.y + cr.h)]
+  ].forEach(([x, y, w, h]) => {
+    if (w > 0 && h > 0) cx.fillRect(x, y, w, h);
+  });
+
+  // marco naranja + handles (mismo ritmo que los de escalado)
+  cx.setLineDash([8, 7]);
+  cx.lineWidth = u;
+  cx.strokeStyle = '#f59e0b';
+  cx.strokeRect(cr.x, cr.y, cr.w, cr.h);
+  cx.setLineDash([]);
+  [
+    [cr.x, cr.y], [cr.x + cr.w, cr.y],
+    [cr.x, cr.y + cr.h], [cr.x + cr.w, cr.y + cr.h],
+    [cr.x + cr.w / 2, cr.y], [cr.x + cr.w / 2, cr.y + cr.h],
+    [cr.x, cr.y + cr.h / 2], [cr.x + cr.w, cr.y + cr.h / 2]
+  ].forEach(([hx, hy]) => {
+    cx.fillStyle = '#f59e0b';
+    cx.fillRect(hx - hs, hy - hs, hs * 2, hs * 2);
+  });
+
+  // guias de tercios dentro del marco
+  cx.strokeStyle = 'rgba(255, 255, 255, .28)';
+  cx.lineWidth = 1;
+  cx.beginPath();
+  for (let i = 1; i <= 2; i++) {
+    cx.moveTo(cr.x + cr.w * i / 3, cr.y);
+    cx.lineTo(cr.x + cr.w * i / 3, cr.y + cr.h);
+    cx.moveTo(cr.x, cr.y + cr.h * i / 3);
+    cx.lineTo(cr.x + cr.w, cr.y + cr.h * i / 3);
+  }
+  cx.stroke();
+  cx.restore();
+}
+
+function startCropMode() {
+  const m = state.imgs[state.isel];
+  if (!m) {
+    toast('Sube una imagen para recortar.', true);
+    return;
+  }
+  state.cropOn = true;
+  state.cropRect = { x: 0, y: 0, w: 1, h: 1 };
+  if (state.cleanOn) {
+    state.cleanOn = false;
+    $('#cleanOn').checked = false;
+  }
+  toast('Modo recorte: ajusta el marco y pulsa "Aplicar recorte".');
+  sync();
+  schedule();
+}
+
+function cancelCrop() {
+  state.cropOn = false;
+  state.cropRect = null;
+  sync();
+  schedule();
+}
+
+function applyCrop() {
+  const m = state.imgs[state.isel];
+  const r = (state.cropOn && state.cropRect) || { x: 0, y: 0, w: 1, h: 1 };
+  if (!m || !m.box) {
+    cancelCrop();
+    return;
+  }
+
+  const cw = m.c.width;
+  const ch = m.c.height;
+  const sx = Math.round(r.x * cw);
+  const sy = Math.round(r.y * ch);
+  const nw = Math.max(1, Math.min(cw - sx, Math.round(r.w * cw)));
+  const nh = Math.max(1, Math.min(ch - sy, Math.round(r.h * ch)));
+  if (sx + nw > cw || sy + nh > ch) {
+    toast('Recorte inválido.', true);
+    return;
+  }
+
+  // fuente recortada
+  const c2 = document.createElement('canvas');
+  c2.width = nw;
+  c2.height = nh;
+  c2.getContext('2d').drawImage(m.c, sx, sy, nw, nh, 0, 0, nw, nh);
+
+  // máscara del borrador recortada con las mismas fracciones
+  if (m.mask && m.mask.width === cw && m.mask.height === ch) {
+    const mk = document.createElement('canvas');
+    mk.width = nw;
+    mk.height = nh;
+    mk.getContext('2d').drawImage(m.mask, sx, sy, nw, nh, 0, 0, nw, nh);
+    m.mask = mk;
+  } else {
+    m.mask = null;
+  }
+
+  // reposiciona para que lo VISIBLE quede exactamente donde estaba
+  const { W, bh } = geom();
+  const b = m.box;
+  const sw2 = b.w * r.w;
+  const sh2 = b.h * r.h;
+  m.w = clamp(sw2 / W, .01, 4);
+  m.sy = 1;
+  m.x = clamp((b.x + r.x * b.w + sw2 / 2) / W, -.5, 1.5);
+  m.y = clamp((b.y + r.y * b.h + sh2 / 2 - bh) / state.art.h, -.5, 1.5);
+  m.c = c2;
+
+  state.cropOn = false;
+  state.cropRect = null;
+  pushHistory();
+  sync();
+  schedule();
+  toast(`Recorte aplicado (${nw}×${nh}).`);
+}
+
 function applyRatio() {
   const value = $('#ratio').value;
   if (value === 'orig') {
@@ -599,6 +761,7 @@ function syncImgs() {
   $('#ih').value = h;
   $('#ihV').textContent = h + '%';
   $('#filterSel').value = current.filter || 'none';
+  syncCropUI();
 }
 
 function syncWatermarkControls() {
@@ -1532,6 +1695,26 @@ function initEvents() {
     const k = W / 700;
     const pad = 14;
 
+    // modo recorte: tiene prioridad sobre todo lo demas
+    const cropM = state.cropOn && state.selK === 'img' && state.imgs[state.isel];
+    if (cropM && cropM.box) {
+      const cr = cropScreenRect(cropM);
+      const mode = getHandle(p, cr, k);
+      if (mode) {
+        state.drag = { m: 'crop-' + mode, r0: { ...state.cropRect }, bx: cropM.box.x, by: cropM.box.y, bw: cropM.box.w, bhh: cropM.box.h };
+        cv.setPointerCapture(e.pointerId);
+        schedule();
+        return;
+      }
+      if (p.x >= cr.x && p.x <= cr.x + cr.w && p.y >= cr.y && p.y <= cr.y + cr.h) {
+        state.drag = { m: 'crop-mv', startX: p.x, startY: p.y, r0: { ...state.cropRect }, bw: cropM.box.w, bhh: cropM.box.h };
+        cv.setPointerCapture(e.pointerId);
+        schedule();
+        return;
+      }
+      return; // click fuera del marco: ignorar en modo recorte
+    }
+
     if (state.cleanOn && state.imgs[state.isel] && state.imgs[state.isel].box) {
       state.drag = { m: 'paint' };
       stroke(p, true);
@@ -1623,6 +1806,18 @@ function initEvents() {
       return;
     }
 
+    if (!state.drag && state.cropOn && state.selK === 'img' && state.imgs[state.isel] && state.imgs[state.isel].box) {
+      const cr = cropScreenRect(state.imgs[state.isel]);
+      const mode = getHandle(p, cr, W / 700);
+      if (mode === 'br' || mode === 'tl') cv.style.cursor = 'nwse-resize';
+      else if (mode === 'bl' || mode === 'tr') cv.style.cursor = 'nesw-resize';
+      else if (mode === 't' || mode === 'b') cv.style.cursor = 'ns-resize';
+      else if (mode === 'l' || mode === 'r') cv.style.cursor = 'ew-resize';
+      else if (p.x >= cr.x && p.x <= cr.x + cr.w && p.y >= cr.y && p.y <= cr.y + cr.h) cv.style.cursor = 'move';
+      else cv.style.cursor = 'default';
+      return;
+    }
+
     if (!state.drag) {
       const m = state.selK === 'img' && state.imgs[state.isel];
       if (m && m.box) {
@@ -1641,6 +1836,32 @@ function initEvents() {
     }
 
     const o = state.imgs[state.isel];
+    if (state.drag && state.drag.m.startsWith('crop-')) {
+      const d = state.drag;
+      const eps = .01;                       // min 1% de la fuente
+      const r = d.r0;
+      const fx0 = r.x, fx1 = r.x + r.w, fy0 = r.y, fy1 = r.y + r.h;
+      if (d.m === 'crop-mv') {
+        state.cropRect = {
+          x: clamp(fx0 + (p.x - d.startX) / d.bw, 0, 1 - r.w),
+          y: clamp(fy0 + (p.y - d.startY) / d.bhh, 0, 1 - r.h),
+          w: r.w,
+          h: r.h
+        };
+      } else {
+        const hasX0 = d.m.endsWith('tl') || d.m.endsWith('bl') || d.m.endsWith('l');
+        const hasX1 = d.m.endsWith('tr') || d.m.endsWith('br') || d.m.endsWith('r');
+        const hasY0 = d.m.endsWith('tl') || d.m.endsWith('tr') || d.m.endsWith('t');
+        const hasY1 = d.m.endsWith('bl') || d.m.endsWith('br') || d.m.endsWith('b');
+        const nx0 = hasX0 ? clamp((p.x - d.bx) / d.bw, 0, fx1 - eps) : fx0;
+        const nx1 = hasX1 ? clamp((p.x - d.bx) / d.bw, fx0 + eps, 1) : fx1;
+        const ny0 = hasY0 ? clamp((p.y - d.by) / d.bhh, 0, fy1 - eps) : fy0;
+        const ny1 = hasY1 ? clamp((p.y - d.by) / d.bhh, fy0 + eps, 1) : fy1;
+        state.cropRect = { x: nx0, y: ny0, w: nx1 - nx0, h: ny1 - ny0 };
+      }
+      schedule();
+      return;
+    }
     if (state.drag.m === 'wm') {
       state.wm.x = clamp(state.drag.startWmX + (p.x - state.drag.startX) / W, 0, 1.2);
       state.wm.y = clamp(state.drag.startWmY + (p.y - state.drag.startY) / H, 0, 1.2);
@@ -1714,6 +1935,13 @@ function initEvents() {
     pushHistory();
     schedule();
   });
+
+  $('#cropBtn').onclick = () => {
+    if (state.cropOn) cancelCrop();
+    else startCropMode();
+  };
+  $('#cropApply').onclick = applyCrop;
+  $('#cropCancel').onclick = cancelCrop;
 
   $('#isz').addEventListener('input', (event) => {
     const image = state.imgs[state.isel];

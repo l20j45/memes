@@ -12,6 +12,8 @@ h1{margin:0;font:400 26px/1 'Anton',Impact,sans-serif;letter-spacing:.02em;color
 .btn.pri{background:linear-gradient(180deg,#8aa0ff,#6d82f6);color:var(--accw);border-color:rgba(123,147,255,.7)}
 .btn.sm{padding:5px 10px;font-weight:500}
 .btn.pri.sm{font-weight:700}
+.btn.active{background:linear-gradient(180deg,#4a3d22,#2b2415);color:#fbbf24;border-color:rgba(245,158,11,.65)}
+.btn.active:hover{border-color:#f59e0b;box-shadow:0 8px 20px rgba(245,158,11,.18)}
 .btn:disabled{opacity:.4;cursor:not-allowed;border-color:var(--line)}
 .btn.loading{pointer-events:none}
 .btn.loading::after{content:'';display:inline-block;width:12px;height:12px;border:2px solid rgba(255,255,255,.25);border-top-color:var(--acc);border-radius:50%;margin-left:8px;vertical-align:middle;animation:spin .7s linear infinite}
