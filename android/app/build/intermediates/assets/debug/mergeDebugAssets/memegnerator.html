@@ -2,12 +2,12 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>Meme Studio Pro</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Comic+Neue:wght@700&family=Montserrat:wght@800&family=Oswald:wght@700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="./styles.css?v=7">
+<link rel="stylesheet" href="./styles.css?v=9">
 <link rel="icon" type="image/png" href="./favicon.png?v=1">
 <link rel="manifest" href="./manifest.json">
 <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
@@ -32,8 +32,8 @@
 
 <main>
   <div class="stage">
-    <div class="cvw"><canvas id="cv" aria-label="Vista previa del meme. Arrastra desde las 4 esquinas o los 4 bordes."></canvas></div>
-    <div class="hint">Arrastra 4 esquinas (escala uniforme) o 4 bordes (estirado vertical/horizontal). Atajos: Ctrl+Z / Ctrl+Y para deshacer/rehacer.</div>
+    <div class="cvw" id="cvwBox"><canvas id="cv" aria-label="Vista previa del meme. Arrastra desde las 4 esquinas o los 4 bordes."></canvas><button class="btn sm" id="zoomReset" type="button" title="Vuelve a 100%" hidden style="position:absolute;right:12px;top:12px;z-index:6">⟲ 100%</button></div>
+    <div class="hint">Arrastra 4 esquinas (escala uniforme) o 4 bordes (estirado). Pellizca con 2 dedos para zoom y arrastra en zona vacía para desplazarte (móvil) · Ctrl+Z/Ctrl+Y deshacer/rehacer.</div>
   </div>
 
   <div class="panel">
@@ -301,6 +301,6 @@
 
 <div id="toast" role="status" aria-live="polite"></div>
 
-<script type="module" src="./app.mjs?v=21"></script>
+<script type="module" src="./app.mjs?v=23"></script>
 </body>
 </html>

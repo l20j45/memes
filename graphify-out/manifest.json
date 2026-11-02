@@ -18,9 +18,9 @@
     "semantic_hash": ""
   },
   "AGENTS.md": {
-    "mtime": 1793655389.283899,
-    "seen": 1793655571.8432572,
-    "ast_hash": "0e1da609b8b9a5d0adf00b0239f46b92",
+    "mtime": 1793655573.1830657,
+    "seen": 1793655868.689858,
+    "ast_hash": "dd2be70b908920a28ea24a7a5e1d3ba5",
     "semantic_hash": ""
   },
   "README.md": {
@@ -54,9 +54,9 @@
     "semantic_hash": ""
   },
   "android/app/src/main/assets/app.mjs": {
-    "mtime": 1793655562.131337,
-    "seen": 1793655571.843221,
-    "ast_hash": "a0b0a8f8494b169d3dfeccd1f777fa16",
+    "mtime": 1793655846.6231766,
+    "seen": 1793655868.689823,
+    "ast_hash": "3086a4544fd3e202e5fa44d1bfd74590",
     "semantic_hash": ""
   },
   "android/app/src/main/java/com/memestudiopro/app/MainActivity.kt": {
@@ -90,9 +90,9 @@
     "semantic_hash": ""
   },
   "android/app/src/main/assets/memegnerator.html": {
-    "mtime": 1793655571.1849933,
-    "seen": 1793655571.8432581,
-    "ast_hash": "f3dc01070c597da17733c84282830ffd",
+    "mtime": 1793655868.0171483,
+    "seen": 1793655868.68986,
+    "ast_hash": "4e6d8c48dbf68d08b85243f56e7b8a2f",
     "semantic_hash": ""
   },
   "android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png": {
@@ -162,9 +162,9 @@
     "semantic_hash": ""
   },
   "android/app/src/main/assets/web/state.js": {
-    "mtime": 1793650526.84537,
-    "seen": 1793652894.588484,
-    "ast_hash": "e5f4d233ceefa2b030cbe66ef40588ae",
+    "mtime": 1793655784.3153079,
+    "seen": 1793655868.6898298,
+    "ast_hash": "22edf7a97881da64723b56f9393af71b",
     "semantic_hash": ""
   },
   "android/app/src/main/assets/web/templates_data.js": {
@@ -318,9 +318,9 @@
     "semantic_hash": ""
   },
   "public/app.mjs": {
-    "mtime": 1793655562.131337,
-    "seen": 1793655571.843244,
-    "ast_hash": "a0b0a8f8494b169d3dfeccd1f777fa16",
+    "mtime": 1793655846.6231766,
+    "seen": 1793655868.689846,
+    "ast_hash": "3086a4544fd3e202e5fa44d1bfd74590",
     "semantic_hash": ""
   },
   "public/manifest.json": {
@@ -366,9 +366,9 @@
     "semantic_hash": ""
   },
   "public/web/state.js": {
-    "mtime": 1793650526.84537,
-    "seen": 1793650666.159211,
-    "ast_hash": "e5f4d233ceefa2b030cbe66ef40588ae",
+    "mtime": 1793655784.3153079,
+    "seen": 1793655868.6898491,
+    "ast_hash": "22edf7a97881da64723b56f9393af71b",
     "semantic_hash": ""
   },
   "public/web/templates_data.js": {
@@ -426,9 +426,9 @@
     "semantic_hash": ""
   },
   "public/memegnerator.html": {
-    "mtime": 1793655571.1849933,
-    "seen": 1793655571.8432589,
-    "ast_hash": "f3dc01070c597da17733c84282830ffd",
+    "mtime": 1793655868.0171483,
+    "seen": 1793655868.689861,
+    "ast_hash": "4e6d8c48dbf68d08b85243f56e7b8a2f",
     "semantic_hash": ""
   },
   "android/app/src/main/assets/favicon.png": {

@@ -18,6 +18,7 @@ export const state = {
   cropOn: false,
   cropRect: null,
   cropShape: 'rect',   // 'rect' | 'poly' (poligono con nodos arrastrables)
+  view: { z: 1, tx: 0, ty: 0 },   // viewport del lienzo (pinch-zoom/pan; transitorio)
   cropPoly: [],        // nodos como fracciones de la fuente (0..1) de la capa
   guides: false,
   history: [],

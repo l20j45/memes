@@ -569,6 +569,77 @@ function pt(e) {
   };
 }
 
+// --- Viewport del lienzo (pinch-zoom / pan en el telefono) -----------------
+// El truco: pt() normaliza contra getBoundingClientRect, que REFLEJA la
+// transformacion CSS del canvas => aplicando translate+scale a cv TODA la
+// matematica existente (arrastrar capas, tiradores, nodos) sigue en
+// coordenadas internas sin cambio alguno.
+const viewPointers = new Map();   // pointerId -> {x,y} client (dedos en cv)
+
+function viewOrig() {
+  // rect "sin transformar" del canvas: layout box que no cambia durante
+  // el gesto (CSS transforms no reflowean)
+  const r = cv.getBoundingClientRect();
+  const vp = state.view;
+  return { left: r.left - vp.tx, top: r.top - vp.ty, w: r.width / vp.z, h: r.height / vp.z };
+}
+
+function applyView() {
+  const vp = state.view;
+  cv.style.transform = `translate(${vp.tx}px, ${vp.ty}px) scale(${vp.z})`;
+  cv.style.transformOrigin = '0 0';
+  const zoom = $('#zoomReset');
+  if (zoom) zoom.hidden = vp.z === 1 && !vp.tx && !vp.ty;
+}
+
+function clampView() {
+  const vp = state.view;
+  vp.z = clamp(vp.z, 1, 8);
+}
+
+function startPinch() {
+  const vp = state.view;
+  const [a, b] = [...viewPointers.values()];
+  vp.z0 = vp.z;
+  vp.d0 = Math.max(1, Math.hypot(a.x - b.x, a.y - b.y));
+  const O = viewOrig();
+  const mx = (a.x + b.x) / 2;
+  const my = (a.y + b.y) / 2;
+  // punto del lienzo (px sin transformar) que debe QUEDAR bajo el midpoint
+  vp.u0 = { x: (mx - O.left - vp.tx) / vp.z, y: (my - O.top - vp.ty) / vp.z };
+}
+
+function updatePinch() {
+  const vp = state.view;
+  const [a, b] = [...viewPointers.values()];
+  const O = viewOrig();
+  const d = Math.hypot(a.x - b.x, a.y - b.y);
+  const mx = (a.x + b.x) / 2;
+  const my = (a.y + b.y) / 2;
+  vp.z = clamp(vp.z0 * d / vp.d0, 1, 8);
+  vp.tx = mx - O.left - vp.z * vp.u0.x;
+  vp.ty = my - O.top - vp.z * vp.u0.y;
+  applyView();
+}
+
+function zoomAt(clientX, clientY, factor) {
+  const vp = state.view;
+  const O = viewOrig();
+  const u = { x: (clientX - O.left - vp.tx) / vp.z, y: (clientY - O.top - vp.ty) / vp.z };
+  vp.z = clamp(vp.z * factor, 1, 8);
+  vp.tx = clientX - O.left - vp.z * u.x;
+  vp.ty = clientY - O.top - vp.z * u.y;
+  applyView();
+}
+
+function resetView() {
+  state.view.z = 1;
+  state.view.tx = 0;
+  state.view.ty = 0;
+  applyView();
+  schedule();
+}
+
 function getHandle(p, b, k) {
   const hs = 18 * k;
   const hp = (x, y) => Math.hypot(p.x - x, p.y - y) < hs;
@@ -2026,6 +2097,18 @@ function initEvents() {
   bindAccordions();
 
   cv.addEventListener('pointerdown', (e) => {
+    // pinch-zoom: 2 dedos sobre el lienzo SIEMPRE pasan al viewport; anula
+    // cualquier drag en curso (la interaccion de un dedo espera)
+    viewPointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (viewPointers.size >= 2) {
+      state.drag = null;
+      state.view.pinching = true;
+      startPinch();
+      schedule();
+      return;
+    }
+    if (state.view.pinching) return;
+
     const p = pt(e);
     const { W, bh, H } = geom();
     const k = W / 700;
@@ -2174,7 +2257,14 @@ function initEvents() {
           break;
         }
       }
-      if (j < 0) return;
+      if (j < 0) {
+        // zoom activo: un dedo sobre zona vacia DESPLAZA el viewport (pan)
+        if (state.view.z > 1) {
+          state.drag = { m: 'view', cx0: e.clientX, cy0: e.clientY, tx0: state.view.tx, ty0: state.view.ty };
+          cv.setPointerCapture(e.pointerId);
+        }
+        return;
+      }
       state.selK = 'img';
       state.isel = j;
       const o = state.imgs[j];
@@ -2187,10 +2277,27 @@ function initEvents() {
   });
 
   cv.addEventListener('pointermove', (e) => {
+    // pinch en curso: dos dedos mueven el viewport y NADA mas
+    if (viewPointers.has(e.pointerId)) {
+      viewPointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (state.view.pinching && viewPointers.size >= 2) {
+        updatePinch();
+        return;
+      }
+    }
     const p = pt(e);
     const { W, bh, H } = geom();
     const k = W / 700;
 
+    if (state.drag && state.drag.m === 'view') {
+      const d = state.drag;
+      state.view.tx = d.tx0 + (e.clientX - d.cx0);
+      state.view.ty = d.ty0 + (e.clientY - d.cy0);
+      clampView();
+      applyView();
+      schedule();
+      return;
+    }
     if (state.drag && state.drag.m === 'paint') {
       stroke(p);
       schedule();
@@ -2338,10 +2445,17 @@ function initEvents() {
     schedule();
   });
 
-  ['pointerup', 'pointercancel'].forEach((eventName) => {
-    cv.addEventListener(eventName, () => {
+  ['pointerup', 'pointercancel', 'pointerleave'].forEach((eventName) => {
+    cv.addEventListener(eventName, (e) => {
+      // seguimiento de dedos del pinch-zoom
+      viewPointers.delete(e.pointerId);
+      if (state.view.pinching && viewPointers.size < 2) {
+        state.view.pinching = false;   // queda el zoom donde lo pellizcaste
+        state.drag = null;
+        return;                        // el fin del pinch NO toca history/prwork
+      }
       if (state.drag) {
-        const paint = state.drag.m === 'paint';
+        const paint = state.drag.m === 'paint' || state.drag.m === 'view';
         // marquee accidental (click sin movimiento): volver al marco completo
         if (state.drag.m === 'crop-new' && state.cropRect && (state.cropRect.w < .02 || state.cropRect.h < .02)) {
           state.cropRect = { x: 0, y: 0, w: 1, h: 1 };
@@ -2351,6 +2465,13 @@ function initEvents() {
       }
     });
   });
+
+  // zoom con Ctrl+rueda (desktop / trackpad) anclado al cursor
+  cv.addEventListener('wheel', (e) => {
+    if (!e.ctrlKey) return;
+    e.preventDefault();
+    zoomAt(e.clientX, e.clientY, Math.exp(-e.deltaY * 0.0018));
+  }, { passive: false });
 
   $('#alignH').onclick = () => {
     if (state.selK === 'txt') cur().x = .5;
@@ -2928,6 +3049,7 @@ function initEvents() {
 
   $('#dlBtn').onclick = download;
   $('#copyBtn').onclick = copy;
+  $('#zoomReset').onclick = resetView;
   $('#exportPreset').addEventListener('change', () => {
     const preset = getExportPreset();
     $('#exportPreset').value = preset ? $('#exportPreset').value : 'original';
