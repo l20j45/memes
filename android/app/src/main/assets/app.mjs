@@ -175,6 +175,7 @@ function buildSnapshot() {
       sy: m.sy,
       filter: m.filter,
       tpl: m.tpl,
+      locked: !!m.locked,
       src: m.c.toDataURL()
     }))
   });
@@ -260,7 +261,8 @@ async function loadState(idx) {
       w: m.w,
       sy: m.sy,
       filter: m.filter || 'none',
-      tpl: m.tpl
+      tpl: m.tpl,
+      locked: !!m.locked
     };
   }));
 
@@ -1015,7 +1017,7 @@ function syncImgs() {
     button.type = 'button';
     button.className = 'tab';
     button.setAttribute('aria-pressed', state.selK === 'img' && i === state.isel);
-    button.textContent = 'Imagen ' + (i + 1);
+    button.textContent = 'Imagen ' + (i + 1) + (m.locked ? ' 🔒' : '');
     button.onclick = () => setSelection('img', i);
     tabs.appendChild(button);
   });
@@ -1033,6 +1035,7 @@ function syncImgs() {
   $('#ih').value = h;
   $('#ihV').textContent = h + '%';
   $('#filterSel').value = current.filter || 'none';
+  $('#imgLock') && $('#imgLock').classList.toggle('active', !!current.locked);
   syncCropUI();
 }
 
@@ -1713,6 +1716,7 @@ function remoteDraftPayload() {
       sy: m.sy,
       filter: m.filter,
       tpl: m.tpl,
+      locked: !!m.locked,
       src: m.c.toDataURL()
     }))
   };
@@ -1738,7 +1742,8 @@ async function restoreRemoteDraft(data) {
       w: m.w ?? fitW(c, false),
       sy: m.sy ?? 1,
       filter: m.filter || 'none',
-      tpl: m.tpl
+      tpl: m.tpl,
+      locked: !!m.locked
     };
   }))).filter(Boolean);
 
@@ -2159,7 +2164,11 @@ function initEvents() {
     } else {
       let j = -1;
       for (let i = state.imgs.length - 1; i >= 0; i--) {
-        const b = state.imgs[i].box;
+        const im = state.imgs[i];
+        // imagen bloqueada: ni seleccion ni drag con el cursor (solo desde
+        // su panel: sliders/botones explícitos la siguen tocando)
+        if (im.locked) continue;
+        const b = im.box;
         if (b && p.x >= b.x && p.x <= b.x + b.w && p.y >= b.y && p.y <= b.y + b.h) {
           j = i;
           break;
@@ -2350,6 +2359,17 @@ function initEvents() {
     schedule();
   };
 
+  $('#imgLock').onclick = () => {
+    const image = state.imgs[state.isel];
+    if (!image) return;
+    image.locked = !image.locked;
+    toast(image.locked ? 'Imagen bloqueada: no se mueve al tocar el lienzo.' : 'Imagen desbloqueada.');
+    sync();
+    pushHistory();
+    schedule();
+    // refrescar etiquetas de pestañas (icono de candado)
+  };
+
   $('#alignV').onclick = () => {
     if (state.selK === 'txt') cur().y = .5;
     else if (state.imgs[state.isel]) state.imgs[state.isel].y = .5;
@@ -2476,7 +2496,12 @@ function initEvents() {
   };
 
   $('#idelBtn').onclick = () => {
-    if (!state.imgs[state.isel]) return;
+    const image = state.imgs[state.isel];
+    if (!image) return;
+    if (image.locked) {
+      toast('La imagen está bloqueada. Desbloquéala 🔒 para poder borrarla.', true);
+      return;
+    }
     state.imgs.splice(state.isel, 1);
     state.isel = Math.max(0, state.isel - 1);
     if (!state.imgs.length) state.selK = 'txt';
