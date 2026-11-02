@@ -4,6 +4,9 @@ venv/
 ENV/
 env/
 
+# Configuración local (usar .env.example como plantilla)
+.env
+
 # Byte-compiled / cachés de Python
 __pycache__/
 *.py[cod]
