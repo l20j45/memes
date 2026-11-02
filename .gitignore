@@ -7,6 +7,9 @@ env/
 # Configuración local (usar .env.example como plantilla)
 .env
 
+# Lock del hook de rebuild de Graphify
+graphify-out/.rebuild.lock
+
 # Byte-compiled / cachés de Python
 __pycache__/
 *.py[cod]
