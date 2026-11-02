@@ -23,9 +23,10 @@ Este documento describe la arquitectura, flujo de datos, convenciones y peculiar
 | `server.py` | Servidor FastAPI con el endpoint `/api/remove-bg` para quitar fondos mediante IA. |
 | `requirements.txt` | Dependencias Python requeridas (`fastapi`, `uvicorn[standard]`, `rembg[cpu]`, `pillow`). |
 | `Dockerfile` | Imagen única multi-arch (x86/ARM, base `python:3.11-slim`); CMD `python server.py`. |
-| `docker-compose.yml` | Servicio `memestudio`: mapeo `${HOST_PORT:-5005}:5005`, volumen `models` (persistencia del caché de modelos rembg en `~/.u2net` y `~/.rembg`), healthcheck vía `/health` e inyección de la config desde `.env` (REMBG_MODEL, CORS_ORIGINS, REDDIT_SUBS, REDDIT_TERMS, MEME_CACHE_TTL, IMG_CACHE_MAX). |
+| `docker-compose.yml` | Servicio `memestudio`: mapeo `${HOST_PORT:-5005}:5005`, volúmenes `models` (caché de modelos rembg en `~/.u2net` y `~/.rembg`) y `drafts` (`/app/drafts`, borradores remotos), healthcheck vía `/health` e inyección de la config desde `.env` (REMBG_MODEL, CORS_ORIGINS, REDDIT_SUBS, REDDIT_TERMS, MEME_CACHE_TTL, IMG_CACHE_MAX, MAX_UPLOAD_MB, MAX_REMOVAL_CONCURRENCY, PREWARM_MODEL, AUTH_USERS, DRAFT_MAX_MB). |
 | `.dockerignore` | Excluye del contexto de build: `.git`, `.venv`, `.kindex/`, `graphify-out/`, `tools/`, docs, cachés. |
-| `.env.example` | Plantilla de configuración: REMBG_MODEL, PORT/HOST/HOST_PORT, CORS_ORIGINS, REDDIT_SUBS, REDDIT_TERMS, MEME_CACHE_TTL, IMG_CACHE_MAX. Copiar a `.env` (ignorado por Git); lo leen `server.py` (loader propio sin deps) y `docker compose`. En Docker el contenedor siempre escucha 0.0.0.0:5005; `HOST_PORT` cambia solo el mapeo. |
+| `drafts/` | Borradores remotos por usuario (`/api/draft`), solo si se usan; ignorado por Git. |
+| `.env.example` | Plantilla de configuración: REMBG_MODEL, PORT/HOST/HOST_PORT, CORS_ORIGINS, REDDIT_SUBS, REDDIT_TERMS, MEME_CACHE_TTL, IMG_CACHE_MAX, MAX_UPLOAD_MB, MAX_REMOVAL_CONCURRENCY, PREWARM_MODEL, AUTH_USERS, DRAFT_DIR, DRAFT_MAX_MB. Copiar a `.env` (ignorado por Git); lo leen `server.py` (loader propio sin deps) y `docker compose`. En Docker el contenedor siempre escucha 0.0.0.0:5005; `HOST_PORT` cambia solo el mapeo. |
 | `android/` | App Android (APK): WebView Kotlin que empaqueta el frontend web como assets (una sola base de código, sin port RN/Flutter). Ver `android/README_ANDROID.md`. |
 | `android/app/src/main/java/.../MainActivity.kt` | WebView con ES modules sobre `file://` (flags de acceso a archivos) + bridge `window.AndroidSaver.saveImage(dataUrl, filename)` que guarda en la galería via MediaStore. |
 | `android/app/src/main/assets/` | Copia del frontend: re-sincronizar con `Copy-Item memegnerator.html, app.mjs, styles.css, index.html android\app\src\main\assets\ -Force` tras cada cambio web (y subir `?v=N`). |
@@ -82,6 +83,11 @@ El estado de la aplicación reside en el objeto singleton `state`:
    - El APK es un WebView con el frontend web como assets; NO es un port a React Native/Flutter y **no debe duplicarse la lógica**: el mismo `app.mjs` detecta `window.AndroidSaver` (`NATIVE_ANDROID`) y usa `HAS_BACKEND`/`apiUrl()` para decidir dónde llamar a la API.
    - En Android el backend de rembg no existe: "Quitar fondo real" exige configurar "Servidor IA" (http://IP-PC:5005 del PC en la misma red, guardado en `localStorage.apiBase`); la búsqueda Imgflip va por la API directa (fallback ya existente) y Reddit no está disponible sin backend.
    - Los assets son una copia: tras cambios web hay que re-copiar con el comando de la tabla de archivos y re-subir el cache-busting `?v=N`; compila con Android Studio (ver `android/README_ANDROID.md`).
+
+8. **Basic Auth (`AUTH_USERS`) y borradores remotos (`/api/draft`):**
+   - `AUTH_USERS` vacío (default) = app sin login y comportamiento idéntico al original LAN. Con valor (`user:pass,user2:pass2`) TODA la app pide login por Basic Auth nativa del navegador, excepto `/health` y los preflight `OPTIONS` (healthcheck de Docker / CORS).
+   - El middleware `_auth_gate` guarda `request.state.user`; si algún endpoint nuevo necesita saber el usuario, usar `getattr(request.state, "user", "") or "local"` (los borradores se escriben en `drafts/<usuario>.json` con slug saneado, nunca confiar en el username crudo como path).
+   - La APK Android NO soporta el diálogo Basic Auth de la WebView: documentar que con contraseñas se usa la PWA; las llamadas fetch desde `file://` con cabecera `Authorization` sobrevivirían, pero la app no tiene UI de credenciales (diseño actual: no enviar header).
 
 ---
 

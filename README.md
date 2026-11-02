@@ -22,6 +22,8 @@
   - [2. Frontend Web (Navegador)](#2-frontend-web-navegador)
   - [3. Script CLI Independiente](#3-script-cli-independiente)
 - [Instalar como App (PWA)](#-instalar-como-app-pwa)
+- [Sincronizar el borrador entre móvil y PC](#-sincronizar-el-borrador-entre-móvil-y-pc)
+- [Acceso con usuario y contraseña](#-acceso-con-usuario-y-contraseña)
 - [Guía de Uso y Atajos](#-guía-de-uso-y-atajos)
 - [API del Backend](#-api-del-backend)
 - [Documentación y Contexto para Agentes de IA](#-documentación-y-contexto-para-agentes-de-ia)
@@ -276,6 +278,36 @@ La app es una **PWA instalable**: desde Chrome o Edge (escritorio o móvil, `htt
 
 ---
 
+## 🔄 Sincronizar el borrador entre móvil y PC
+
+Los borradores guardados por el autosave viven en el `localStorage` de **cada dispositivo** (el navegador del PC y la app del móvil no comparten nada por sí solos). Para continuar un meme en otro sitio hay botones de sincronización (usables siempre que haya backend: en la web con el servidor, o en Android con "Servidor IA" configurado):
+
+- **☁ Subir borrador** — guarda en el servidor el meme **completo** (imagen, capas, posiciones, filtros, marca de agua…) como el borrador de tu usuario.
+- **↧ Traer borrador** — reemplaza el canvas por lo guardado en el servidor (con confirmación).
+
+Flujo típico: editas en el móvil → "Subir borrador" → te sientas al PC → "Traer borrador" (y viceversa).
+
+El borrador vive en `drafts/<usuario>.json` en el servidor (uno por usuario) y viaja como JSON, así que sigue editable: no es un PNG exportado. Dentro de tu red funciona solo; para hacerlo accesible desde fuera de casa, ver la sección siguiente.
+
+---
+
+## 🔐 Acceso con usuario y contraseña
+
+Si expones el servidor fuera de tu red (por ejemplo con **Cloudflare Tunnel** apuntando a `localhost:5005`), puedes pedir usuario y contraseña a cualquiera que entre: en el `.env` define
+
+```
+AUTH_USERS=daniel:mipass,novia:supass
+```
+
+- Vacio (por defecto) = sin login, como siempre (ideal para LAN).
+- Con valor, **toda la app pide login** con el diálogo nativo del navegador (Basic Auth). El `/health` queda abierto para el healthcheck de Docker.
+- **Cada usuario tiene su PROPIO borrador remoto**: tú y quien compartas el acceso sincronizan sus memes por separado sin pisarse.
+- Comparación de contraseñas a prueba de timing (`secrets.compare_digest`).
+- Nota para la APK Android: su WebView no soporta el diálogo de login del Basic Auth → si activas contraseñas, en el móvil usa la **PWA** del servidor (se instala desde `https://tu-tunnel/…` con el botón "Instalar" de Chrome) en lugar de la APK, o deja `AUTH_USERS` vacío.
+- Tras cambiar `AUTH_USERS`, reinicia `python server.py` (o `docker compose up -d`).
+
+---
+
 ## ⌨️ Guía de Uso y Atajos
 
 | Atajo de Teclado | Acción |
@@ -325,6 +357,12 @@ Proxy de la imagen del meme servida desde este servidor en lugar de `i.imgflip.c
 Búsqueda de memes en Reddit vía el archivo público de Arctic Shift (sin clave de API; la red JSON de reddit.com suele estar bloqueada). Con término: busca por título en varios subreddits de memes (r/dankmemes, r/me_ira, …); sin término: muestra aleatoria de memes populares. Filtra NSFW, tiene caché 5 min y pacing anti-429.
 - **Query:** `q=<texto>` (opcional), `limit=<n>` (max 24)
 - **Respuesta:** mismo shape que `/api/meme-search`; las `url` van por `/api/meme-image` (dominios permitidos: imgflip, redd.it, imgur).
+
+### `POST /api/draft` / `GET /api/draft`
+Sincronización de borradores entre dispositivos (móvil ↔ PC). Cada usuario guarda **su** borrador completo (JSON con imagen en dataURL, capas, posiciones, filtros y ajustes) en `drafts/<usuario>.json`; el usuario lo identifica la Basic Auth (`AUTH_USERS`), o es `local` si el servidor corre sin contraseña.
+- **`POST`:** body = borrador JSON (máx `DRAFT_MAX_MB` MB) → `{"ok":true,"user","bytes","saved_at"}`
+- **`GET`:** el borrador guardado; `X-Saved-At` con la fecha de la última subida. `404` si el usuario aún no subió nada.
+- Requiere backend (en Android, configurar "Servidor IA").
 
 ---
 
