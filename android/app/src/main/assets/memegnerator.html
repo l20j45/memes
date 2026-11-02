@@ -111,6 +111,10 @@
           <input class="in" id="apiBase" type="text" placeholder="Servidor IA: http://IP-PC:5005" inputmode="url">
           <button class="btn sm" id="apiBaseSave" type="button">Guardar</button>
         </div>
+        <div class="row" style="margin-bottom:8px;display:none;width:100%" id="draftRow">
+          <button class="btn sm" id="draftUp" type="button" title="Guarda el meme COMPLETO (imagen + capas + ajustes) en el servidor para continuar en otro dispositivo">☁ Subir borrador</button>
+          <button class="btn sm" id="draftDown" type="button" title="Restaura el borrador guardado en el servidor">↧ Traer borrador</button>
+        </div>
         <div class="tpl" id="tpl"></div>
       </div>
     </section>
@@ -237,6 +241,6 @@
 <div class="drop" id="drop">Suelta tu imagen aquí</div>
 <div id="toast" role="status" aria-live="polite"></div>
 
-<script type="module" src="./app.mjs?v=7"></script>
+<script type="module" src="./app.mjs?v=8"></script>
 </body>
 </html>

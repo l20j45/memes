@@ -998,6 +998,15 @@ function buildTemplates() {
       setTimeout(() => location.reload(), 900);
     };
   }
+  if ($('#draftRow')) {
+    // La sincronizacion de borradores necesita backend (web con servidor, o
+    // Android con "Servidor IA" configurado).
+    if (HAS_BACKEND) {
+      $('#draftRow').style.display = '';
+      $('#draftUp').onclick = () => uploadDraft();
+      $('#draftDown').onclick = () => downloadDraft();
+    }
+  }
   if ($('#searchViralBtn')) {
     $('#searchViralBtn').onclick = () => loadViralTemplates($('#memeSearch').value);
   }
@@ -1495,6 +1504,143 @@ function loadLocal() {
     if (data.bgTransparent !== undefined) $('#bgTransparent').checked = !!data.bgTransparent;
   } catch (error) {
     console.warn('No se pudo restaurar el borrador', error);
+  }
+}
+
+// --- Sincronizacion de borradores con el servidor (movil <-> PC) -------------
+// Cada usuario guarda UN borrador remoto con el meme completo: la imagen
+// (dataURL), las capas, posiciones, filtros y ajustes. Formato compatible con
+// buildSnapshot()/loadState() + los ajustes de UI del borrador local.
+
+function remoteDraftPayload() {
+  return {
+    art: state.art,
+    orig: state.orig,
+    layers: state.layers,
+    bar: state.bar,
+    upper: state.upper,
+    guides: state.guides,
+    bg: $('#bg').value,
+    bgTransparent: $('#bgTransparent').checked,
+    wm: state.wm,
+    savedAt: Date.now(),
+    imgs: state.imgs.map((m) => ({
+      x: m.x,
+      y: m.y,
+      w: m.w,
+      sy: m.sy,
+      filter: m.filter,
+      tpl: m.tpl,
+      src: m.c.toDataURL()
+    }))
+  };
+}
+
+async function restoreRemoteDraft(data) {
+  state.imgs = (await Promise.all((data.imgs || []).map(async (m) => {
+    const img = new Image();
+    img.src = m.src;
+    try {
+      await img.decode();
+    } catch {
+      return null;
+    }
+    const c = document.createElement('canvas');
+    c.width = img.width;
+    c.height = img.height;
+    c.getContext('2d').drawImage(img, 0, 0);
+    return {
+      c,
+      x: m.x ?? .5,
+      y: m.y ?? .5,
+      w: m.w ?? fitW(c, false),
+      sy: m.sy ?? 1,
+      filter: m.filter || 'none',
+      tpl: m.tpl
+    };
+  }))).filter(Boolean);
+
+  if (!state.imgs.length) throw new Error('El borrador no contiene imagenes validas');
+
+  state.art = data.art || state.art;
+  state.orig = data.orig || state.orig;
+  state.layers = data.layers || state.layers;
+  state.bar = data.bar ?? 0;
+  state.upper = data.upper ?? true;
+  state.guides = !!(data.guides ?? state.guides);
+  state.wm = { ...state.wm, ...(data.wm || {}) };
+  if (data.bg) $('#bg').value = data.bg;
+  if (data.bgTransparent !== undefined) $('#bgTransparent').checked = !!data.bgTransparent;
+
+  state.sel = 0;
+  state.isel = 0;
+  state.selK = state.imgs.length ? 'img' : 'txt';
+  normalizeSelection();
+  sync();
+  pushHistory();
+  schedule();
+}
+
+function authErrorMessage(status, fallback) {
+  if (status === 401) return 'Login requerido (usuario/contrasena del servidor).';
+  if (status === 404) return 'El servidor no tiene ningun borrador guardado para tu usuario.';
+  if (status === 413) return 'El borrador es demasiado grande para el servidor.';
+  return fallback;
+}
+
+async function uploadDraft() {
+  const button = $('#draftUp');
+  if (!validateExportReady()) {
+    toast('Añade una imagen antes de subir el borrador.', true);
+    return;
+  }
+  button.disabled = true;
+  const original = button.textContent;
+  button.textContent = 'Subiendo...';
+  try {
+    const response = await fetch(apiUrl('/api/draft'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(remoteDraftPayload())
+    });
+    if (!response.ok) {
+      toast(authErrorMessage(response.status, 'No se pudo subir el borrador.'), true);
+      return;
+    }
+    const info = await response.json();
+    toast(`Borrador subido como "${info.user}" (${(info.bytes / 1024).toFixed(0)} KB).`);
+  } catch (error) {
+    console.error(error);
+    toast('No se pudo conectar con el servidor para subir el borrador.', true);
+  } finally {
+    button.disabled = false;
+    button.textContent = original;
+  }
+}
+
+async function downloadDraft() {
+  const button = $('#draftDown');
+  if (!confirm('¿Reemplazar lo que hay en el canvas por el borrador guardado en el servidor?')) return;
+  button.disabled = true;
+  const original = button.textContent;
+  button.textContent = 'Descargando...';
+  try {
+    const response = await fetch(apiUrl('/api/draft'));
+    if (!response.ok) {
+      toast(authErrorMessage(response.status, 'No se pudo traer el borrador.'), true);
+      return;
+    }
+    const data = await response.json();
+    await restoreRemoteDraft(data);
+    toast('Borrador restaurado desde el servidor.');
+  } catch (error) {
+    console.error(error);
+    toast(error.message === 'El borrador no contiene imagenes validas'
+      ? error.message
+      : 'No se pudo conectar con el servidor para traer el borrador.', true);
+  } finally {
+    button.disabled = false;
+    button.textContent = original;
   }
 }
 
