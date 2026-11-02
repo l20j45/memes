@@ -8,7 +8,7 @@ Este documento describe la arquitectura, flujo de datos, convenciones y peculiar
 
 **Meme Studio Pro** es una aplicación web interactiva que funciona como una estación completa para diseñar, personalizar, restaurar y exportar memes. Combina un cliente ligero en JavaScript nativo con Canvas 2D y un microservicio en Python para inferencia con modelos de visión por computador (segmentación de fondos).
 
-- **Frontend:** Vanilla HTML5, CSS3 y JavaScript moderno con ES Modules (`app.mjs`). No utiliza frameworks pesados ni empaquetadores (webpack, vite, rollup).
+- **Frontend:** Vanilla HTML5, CSS3 y JavaScript moderno con ES Modules (`app.mjs` + módulos puros en `web/`). No utiliza frameworks pesados ni empaquetadores (webpack, vite, rollup).
 - **Backend:** Python con FastAPI y `rembg` (respaldado por el runtime ONNX de U2-Net) corriendo en el puerto 5005.
 
 ---
@@ -18,18 +18,19 @@ Este documento describe la arquitectura, flujo de datos, convenciones y peculiar
 | Archivo | Responsabilidad Principal |
 | :--- | :--- |
 | `memegnerator.html` | Estructura de la aplicación, panel lateral de acordeones, controles y canvas. |
-| `app.mjs` | Núcleo de lógica: bucle de dibujo de Canvas, manejador de transformaciones (handles), historial Undo/Redo, inpainting de trazos y comunicación con APIs. |
+| `app.mjs` | Orquestador de la app (entrypoint ESM único): eventos, bucle de dibujo de Canvas, manejador de transformaciones (handles), historial Undo/Redo e importación del dominio de `web/`. |
+| `web/` | Módulos ES puros extraídos de `app.mjs` (fase 1 de la modularización): `dom.js` (utils de DOM/toast), `presets.js` (MAX/FONTS/PRESETS/EXPORT_PRESETS), `state.js` (singleton `state` + `mk`), `backend.js` (NATIVE_ANDROID/HAS_BACKEND/apiUrl), `geometry.js` (clamp, normalizadores, color), `watermark.js` (getWatermarkBox), `image_math.js` (dilateMask/inpaint, puro por píxel) y `templates_data.js` (plantillas canvas). Sin DOM excepto `dom.js`/`watermark.js` (pide medida al ctx); testeable con `node --test tests/js/`. |
 | `styles.css` | Esquema de diseño en modo oscuro, estilos de botones, acordeones y media queries responsivas. |
 | `server.py` | Servidor FastAPI con el endpoint `/api/remove-bg` para quitar fondos mediante IA. |
 | `requirements.txt` | Dependencias Python requeridas (`fastapi`, `uvicorn[standard]`, `rembg[cpu]`, `pillow`). |
 | `Dockerfile` | Imagen única multi-arch (x86/ARM, base `python:3.11-slim`); CMD `python server.py`. |
-| `docker-compose.yml` | Servicio `memestudio`: mapeo `${HOST_PORT:-5005}:5005`, volúmenes `models` (caché de modelos rembg en `~/.u2net` y `~/.rembg`) y `drafts` (`/app/drafts`, borradores remotos), healthcheck vía `/health` e inyección de la config desde `.env` (REMBG_MODEL, CORS_ORIGINS, REDDIT_SUBS, REDDIT_TERMS, MEME_CACHE_TTL, IMG_CACHE_MAX, MAX_UPLOAD_MB, MAX_REMOVAL_CONCURRENCY, PREWARM_MODEL, AUTH_USERS, DRAFT_MAX_MB). |
+| `docker-compose.yml` | Servicio `memestudio`: mapeo `${HOST_PORT:-5005}:5005`, volúmenes `models` (caché de modelos rembg en `~/.u2net` y `~/.rembg`), `drafts` (`/app/drafts`, borradores remotos) y `data` (`/app/data`, BD SQLite del login con cuentas), healthcheck vía `/health` e inyección de la config desde `.env` (REMBG_MODEL, CORS_ORIGINS, REDDIT_SUBS, REDDIT_TERMS, MEME_CACHE_TTL, IMG_CACHE_MAX, MAX_UPLOAD_MB, MAX_REMOVAL_CONCURRENCY, PREWARM_MODEL, AUTH_USERS, REQUIRE_LOGIN, REGISTRATION_OPEN, SESSION_DAYS, AUTH_DB, PUBLIC_HTTPS, DRAFT_MAX_MB). |
 | `.dockerignore` | Excluye del contexto de build: `.git`, `.venv`, `.kindex/`, `graphify-out/`, `tools/`, docs, cachés. |
 | `drafts/` | Borradores remotos por usuario (`/api/draft`), solo si se usan; ignorado por Git. |
-| `.env.example` | Plantilla de configuración: REMBG_MODEL, PORT/HOST/HOST_PORT, CORS_ORIGINS, REDDIT_SUBS, REDDIT_TERMS, MEME_CACHE_TTL, IMG_CACHE_MAX, MAX_UPLOAD_MB, MAX_REMOVAL_CONCURRENCY, PREWARM_MODEL, AUTH_USERS, DRAFT_DIR, DRAFT_MAX_MB. Copiar a `.env` (ignorado por Git); lo leen `server.py` (loader propio sin deps) y `docker compose`. En Docker el contenedor siempre escucha 0.0.0.0:5005; `HOST_PORT` cambia solo el mapeo. |
+| `.env.example` | Plantilla de configuración: REMBG_MODEL, PORT/HOST/HOST_PORT, CORS_ORIGINS, REDDIT_SUBS, REDDIT_TERMS, MEME_CACHE_TTL, IMG_CACHE_MAX, MAX_UPLOAD_MB, MAX_REMOVAL_CONCURRENCY, PREWARM_MODEL, AUTH_USERS, REQUIRE_LOGIN, REGISTRATION_OPEN, SESSION_DAYS, AUTH_DB, PUBLIC_HTTPS, DRAFT_DIR, DRAFT_MAX_MB. Copiar a `.env` (ignorado por Git); lo leen `server.py` (loader propio sin deps) y `docker compose`. En Docker el contenedor siempre escucha 0.0.0.0:5005; `HOST_PORT` cambia solo el mapeo. |
 | `android/` | App Android (APK): WebView Kotlin que empaqueta el frontend web como assets (una sola base de código, sin port RN/Flutter). Ver `android/README_ANDROID.md`. |
 | `android/app/src/main/java/.../MainActivity.kt` | WebView con ES modules sobre `file://` (flags de acceso a archivos) + bridge `window.AndroidSaver.saveImage(dataUrl, filename)` que guarda en la galería via MediaStore. |
-| `android/app/src/main/assets/` | Copia del frontend: re-sincronizar con `Copy-Item memegnerator.html, app.mjs, styles.css, index.html android\app\src\main\assets\ -Force` tras cada cambio web (y subir `?v=N`). |
+| `android/app/src/main/assets/` | Copia del frontend: re-sincronizar con `cp memegnerator.html app.mjs styles.css index.html android/app/src/main/assets/ && rm -rf android/app/src/main/assets/web && cp -R web android/app/src/main/assets/web` tras cada cambio web (y subir `?v=N` en `memegnerator.html`). **La carpeta `web/` es obligatoria en assets** desde que `app.mjs` importa `./web/*.js`. |
 | `manifest.json` | Manifest PWA: `start_url: "./"`, `display: standalone`, iconos 192/512 + maskable. Servido por StaticFiles (`/manifest.json`). |
 | `sw.js` | Service worker mínimo: cache-first para estáticos (los `?v=N` invalidan solos), network-first para `/api/*`. Solo se registra en HTTP(S) (no en `file://` del Android). |
 | `icon-192.png` / `icon-512.png` / `apple-touch-icon.png` | Iconos PWA (mismo estilo del favicon: PNG generado). |
@@ -61,7 +62,7 @@ El estado de la aplicación reside en el objeto singleton `state`:
 
 1. **Servidor HTTP obligatorio (no `file://`); despliegue en Docker:**
    - La aplicación no debe probarse abriendo directamente el HTML con el protocolo `file://`, ya que los navegadores bloquean la importación de `<script type="module" src="./app.mjs">`. Debe ejecutarse como una única app vía `python server.py`, que sirve el frontend y la API integrados en FastAPI (puerto 5005).
-   - **El despliegue previsto es en contenedor Docker**: `docker compose up -d --build` (ver `Dockerfile` y `docker-compose.yml`). El Dockerfile copia solo `server.py`, `memegnerator.html`, `app.mjs`, `styles.css`, `favicon.png` y los archivos de la PWA (`manifest.json`, `sw.js`, `icon-192.png`, `icon-512.png`, `apple-touch-icon.png`); si se añade un nuevo archivo de frontend hay que incluirlo en el `COPY` (o relajar el `.dockerignore`).
+   - **El despliegue previsto es en contenedor Docker**: `docker compose up -d --build` (ver `Dockerfile` y `docker-compose.yml`). El Dockerfile copia solo `server.py`, `memegnerator.html`, `app.mjs`, `styles.css`, `favicon.png`, la PWA (`manifest.json`, `sw.js`, `icon-192.png`, `icon-512.png`, `apple-touch-icon.png`), la carpeta `web/` y el paquete `memestudio/`; si se añade un nuevo archivo de frontend hay que incluirlo en el `COPY` (o relajar el `.dockerignore`).
    - Dentro del contenedor la detección ARM sigue funcionando (`platform.machine()` no se virtualiza en Docker sin emulación); el caché de modelos debe persistirse con el volumen `models` (montado en `/root/.u2net` y `/root/.rembg`) o cada reinicio re-descargará los pesos.
 
 2. **Canvas y CORS (Tainted Canvas):**
@@ -84,10 +85,12 @@ El estado de la aplicación reside en el objeto singleton `state`:
    - En Android el backend de rembg no existe: "Quitar fondo real" exige configurar "Servidor IA" (http://IP-PC:5005 del PC en la misma red, guardado en `localStorage.apiBase`); la búsqueda Imgflip va por la API directa (fallback ya existente) y Reddit no está disponible sin backend.
    - Los assets son una copia: tras cambios web hay que re-copiar con el comando de la tabla de archivos y re-subir el cache-busting `?v=N`; compila con Android Studio (ver `android/README_ANDROID.md`).
 
-8. **Basic Auth (`AUTH_USERS`) y borradores remotos (`/api/draft`):**
-   - `AUTH_USERS` vacío (default) = app sin login y comportamiento idéntico al original LAN. Con valor (`user:pass,user2:pass2`) TODA la app pide login por Basic Auth nativa del navegador, excepto `/health` y los preflight `OPTIONS` (healthcheck de Docker / CORS).
-   - El middleware `_auth_gate` guarda `request.state.user`; si algún endpoint nuevo necesita saber el usuario, usar `getattr(request.state, "user", "") or "local"` (los borradores se escriben en `drafts/<usuario>.json` con slug saneado, nunca confiar en el username crudo como path).
-   - La APK Android NO soporta el diálogo Basic Auth de la WebView: documentar que con contraseñas se usa la PWA; las llamadas fetch desde `file://` con cabecera `Authorization` sobrevivirían, pero la app no tiene UI de credenciales (diseño actual: no enviar header).
+8. **Login con cuentas (REQUIRE_LOGIN), Basic Auth (`AUTH_USERS`) y borradores remotos (`/api/draft`):**
+   - Prioridad de modos: `AUTH_USERS` (Basic Auth, privado) > `REQUIRE_LOGIN=1` (cuentas con registro en SQLite `data/memestudio.db`, para despliegues públicos) > abierto (default LAN, comportamiento idéntico al original).
+   - Modo cuentas: la API `/api/*` exige cookie de sesión (los estáticos quedan abiertos para poder renderizar el formulario de login). Contraseñas hash scrypt, tokens de sesión guardados SOLO como hash SHA-256, cookie HttpOnly/SameSite=Lax (y `Secure` con `PUBLIC_HTTPS=1`). Endpoints `/api/auth/{register,login,logout,me}`; el frontend consulta `/api/auth/me` al arrancar y ante cualquier 401 llama `handleUnauthorized()` (abre el modal).
+   - Mitigación CSRF: `SameSite=Lax` + comprobación del header `Origin` en todo POST/PUT/DELETE/PATCH bajo `/api/*` cuando REQUIRE_LOGIN está activo. Rate-limit en memoria por IP para register/login (proceso único: con varios workers el límite valdría por worker, la BD sigue protegiendo el resto).
+   - En todos los modos, el middleware `_auth_gate` guarda `request.state.user`; si algún endpoint nuevo necesita saber el usuario, usar `getattr(request.state, "user", "") or "local"` (los borradores se escriben en `drafts/<usuario>.json` con slug saneado, nunca confiar en el username crudo como path).
+   - La APK Android NO soporta el diálogo Basic Auth de la WebView, y las cookies de sesión sobre `file://` + `apiBase` cruzado tampoco viajan de forma fiable: documentar que con contraseñas/sesiones se usa la PWA del servidor en el navegador; la APK queda para uso local gratuito.
 
 ---
 
