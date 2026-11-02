@@ -53,6 +53,10 @@ El output es el mismo: `app/build/outputs/apk/debug/app-debug.apk`.
 1. **Servidor en tu LAN (recomendado):** deja `python server.py` corriendo en tu PC y en la app Android abre el acordeón de plantillas → campo **"Servidor IA: http://IP-PC:5005"** → Guardar. El backend ya permite CORS (`allow_origins=["*"]`) y HTTP en claro desde Android via `network_security_config`.
 2. Sin servidor: usa el borrador manual (gomma), como siempre.
 
+También disponible desde aquí: los botones **"☁ Subir borrador" / "↧ Traer borrador"** (aparecen con "Servidor IA" configurado) — sincronizan tu meme (imagen, capas, ajustes) con el PC vía `POST/GET /api/draft`.
+
+> **Si el servidor usa contraseñas (`AUTH_USERS` en `.env`):** la WebView del APK no muestra el diálogo de login del navegador, así que el APK no podrá autenticarse. En ese caso usa la **PWA** (abre `http://IP-PC:5005` o `https://tu-tunnel/` en Chrome móvil → "Instalar app"), que sí soporta Basic Auth nativo, o deja `AUTH_USERS` vacío.
+
 ## Actualizar el frontend de la app
 
 Los assets son una **copia** del frontend. Tras cambiar `memegnerator.html`/`app.mjs`/`styles.css` y subir el `?v=N` de cache-busting:
