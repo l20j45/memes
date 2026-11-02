@@ -23,6 +23,8 @@ export const state = {
   dropDepth: 0,
   wm: {
     enabled: false,
+    mode: 'text',        // 'text' | 'img' (logo con transparencia)
+    img: null,           // { c: canvas del logo, w: ancho como fraccion del lienzo }
     text: 'miweb.com',
     x: .82,
     y: .92,
