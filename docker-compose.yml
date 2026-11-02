@@ -20,6 +20,9 @@ services:
       - REDDIT_TERMS=${REDDIT_TERMS:-}
       - MEME_CACHE_TTL=${MEME_CACHE_TTL:-300}
       - IMG_CACHE_MAX=${IMG_CACHE_MAX:-120}
+      - MAX_UPLOAD_MB=${MAX_UPLOAD_MB:-10}
+      - MAX_REMOVAL_CONCURRENCY=${MAX_REMOVAL_CONCURRENCY:-2}
+      - PREWARM_MODEL=${PREWARM_MODEL:-0}
       # Dentro del contenedor el puerto/puerto base es siempre 5005
       - PORT=5005
     volumes:

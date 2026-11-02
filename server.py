@@ -8,6 +8,7 @@ import os
 import platform
 import random
 import re
+import threading
 import time
 import unicodedata
 import urllib.error
@@ -64,6 +65,16 @@ _CORS_ORIGINS = [o.strip() for o in os.environ.get("CORS_ORIGINS", "*").split(",
 _MEME_CACHE_TTL = int(os.environ.get("MEME_CACHE_TTL", "300"))
 _IMG_CACHE_MAX = int(os.environ.get("IMG_CACHE_MAX", "120"))
 
+# Protecciones del endpoint pesado /api/remove-bg (inference CPU):
+# - tamaño maximo de la imagen aceptada (evita peticiones que agoten la RAM)
+# - inferencias concurrentes (un modelo U2-Net en CPU por slot)
+# - pre-warm opcional del modelo al arrancar (evita la primera descarga lenta
+#   mientras el usuario ya esta esperando su primer "quitar fondo")
+_MAX_UPLOAD_MB = int(os.environ.get("MAX_UPLOAD_MB", "10"))
+_MAX_REMOVAL_CONCURRENCY = int(os.environ.get("MAX_REMOVAL_CONCURRENCY", "2"))
+_PREWARM_MODEL = os.environ.get("PREWARM_MODEL", "").lower() in ("1", "true", "yes", "si", "sí")
+_removal_slots = threading.BoundedSemaphore(max(1, _MAX_REMOVAL_CONCURRENCY))
+
 # Subreddits y terminos aleatorios de la busqueda Reddit (ver .env.example)
 _REDDIT_SUBS = tuple(
     s.strip() for s in os.environ.get(
@@ -118,39 +129,57 @@ def remove_bg(image: UploadFile = File(...)) -> StreamingResponse:
     if not image.filename:
         raise HTTPException(status_code=400, detail="No image file provided")
 
+    # Una inferencia cuenta aqui: hasta MAX_REMOVAL_CONCURRENCY a la vez y
+    # 429 para las demas en vez de encolar hasta saturar CPU/RAM.
+    if not _removal_slots.acquire(blocking=False):
+        raise HTTPException(
+            status_code=429,
+            detail=f"Servidor ocupado (max {_MAX_REMOVAL_CONCURRENCY} inferencias en paralelo); reintenta en unos segundos",
+        )
+
     try:
-        content = image.file.read()
-        with Image.open(io.BytesIO(content)) as img:
-            rgba = img.convert("RGBA")
-            src_w, src_h = rgba.size
-            session = _get_rembg_session()
-            subject = remove(rgba, session=session) if session else remove(rgba)
+        try:
+            content = image.file.read(_MAX_UPLOAD_MB * 1024 * 1024 + 1)
+            if len(content) > _MAX_UPLOAD_MB * 1024 * 1024:
+                raise HTTPException(
+                    status_code=413,
+                    detail=f"Imagen demasiado grande (max {_MAX_UPLOAD_MB} MB)",
+                )
+            with Image.open(io.BytesIO(content)) as img:
+                rgba = img.convert("RGBA")
+                src_w, src_h = rgba.size
+                session = _get_rembg_session()
+                subject = remove(rgba, session=session) if session else remove(rgba)
 
-            # Auto-crop: bounding box del canal alfa. Elimina el area 100%
-            # transparente sobrante para que el resultado sea mas pequeno
-            # (menos pixels muertos que el canvas de la app sobredimensiona).
-            # El offset/dimensiones originales viajan en la cabecera
-            # X-Crop-Box: "left,top,original_width,original_height" para que
-            # el frontend pueda reubicar la capa en su sitio.
-            bbox = subject.getchannel("A").getbbox()
-            if bbox:
-                pad = max(1, min(src_w, src_h) // 200)  # margen anti-aliasing
-                left = max(0, bbox[0] - pad)
-                top = max(0, bbox[1] - pad)
-                right = min(src_w, bbox[2] + pad)
-                bottom = min(src_h, bbox[3] + pad)
-                result = subject.crop((left, top, right, bottom))
-            else:  # resultado totalmente transparente: no habia nada que recortar
-                left, top = 0, 0
-                result = subject
+                # Auto-crop: bounding box del canal alfa. Elimina el area 100%
+                # transparente sobrante para que el resultado sea mas pequeno
+                # (menos pixels muertos que el canvas de la app sobredimensiona).
+                # El offset/dimensiones originales viajan en la cabecera
+                # X-Crop-Box: "left,top,original_width,original_height" para que
+                # el frontend pueda reubicar la capa en su sitio.
+                bbox = subject.getchannel("A").getbbox()
+                if bbox:
+                    pad = max(1, min(src_w, src_h) // 200)  # margen anti-aliasing
+                    left = max(0, bbox[0] - pad)
+                    top = max(0, bbox[1] - pad)
+                    right = min(src_w, bbox[2] + pad)
+                    bottom = min(src_h, bbox[3] + pad)
+                    result = subject.crop((left, top, right, bottom))
+                else:  # resultado totalmente transparente: no habia nada que recortar
+                    left, top = 0, 0
+                    result = subject
 
-            output = io.BytesIO()
-            result.save(output, format="PNG")
-            output.seek(0)
-            headers = {"X-Crop-Box": f"{left},{top},{src_w},{src_h}"}
-            return StreamingResponse(output, media_type="image/png", headers=headers)
-    except Exception as exc:  # pragma: no cover - defensive path
-        raise HTTPException(status_code=500, detail=f"Error processing image: {exc}")
+                output = io.BytesIO()
+                result.save(output, format="PNG")
+                output.seek(0)
+                headers = {"X-Crop-Box": f"{left},{top},{src_w},{src_h}"}
+                return StreamingResponse(output, media_type="image/png", headers=headers)
+        except HTTPException:
+            raise  # errores propios (413, ...): no convertirlos en 500
+        except Exception as exc:  # pragma: no cover - defensive path
+            raise HTTPException(status_code=500, detail=f"Error processing image: {exc}")
+    finally:
+        _removal_slots.release()
 
 
 @app.get("/")
@@ -444,4 +473,7 @@ if __name__ == "__main__":
     print(f"  Escuchando en: {_HOST}:{_PORT}")
     print(f"  Abre en tu navegador: http://localhost:{_PORT}")
     print(f"==========================================\n")
+    if _PREWARM_MODEL:
+        print("[remove-bg] PREWARM_MODEL activo: cargando el modelo en segundo plano...")
+        threading.Thread(target=_get_rembg_session, daemon=True).start()
     uvicorn.run("server:app", host=_HOST, port=_PORT, reload=False)
