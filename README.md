@@ -37,7 +37,9 @@
 ### 🖼️ Composición y Edición de Imágenes
 - **Capas Múltiples:** Sube, pega desde el portapapeles o arrastra cualquier cantidad de imágenes (`PNG`, `JPG`, `WebP`, etc.).
 - **Transformación Libre:** 8 manejadores interactivos (4 esquinas para escala uniforme y 4 bordes para deformación/estiramiento horizontal y vertical).
-- **Modo Recorte:** ✂ Recorta cualquier imagen subida o pegada para reutilizarla: marco interactivo con guías de tercios y oscurecido de lo descartado, o **modo nodos poligonales arrastrables** (click para añadir puntos, arrastra para moverlos; estilo lazo de Photoshop) para conservar solo la forma que quieras; "Aplicar" hornea el recorte manteniendo lo visible exactamente en su sitio (también recorta la máscara del borrador).
+- **Candado por Imagen:** 🔒 Bloquea cualquier imagen subida: queda fija en el lienzo (no se selecciona ni arrastra al tocar el canvas; el click pasa a la capa libre de debajo) pero sigue editable desde su panel — ideal para fondos/stickers fijos. El candado viaja en undo/redo y en los borradores remotos.
+- **Zoom y Pan en Móvil:** Pellizca con 2 dedos sobre el lienzo para hacer zoom (1×–8×) centrado en lo que miras; arrastra con 1 dedo en zona vacía para desplazarte; botón `⟲ 100%` para volver; en escritorio `Ctrl + rueda` con zoom anclado al cursor. Todo el editor (tiradores, nodos de recorte, pintar) funciona igual dentro del zoom.
+- **Modo Recorte:** ✂ Recorta cualquier imagen subida o pegada para reutilizarla: marco interactivo con guías de tercios y oscurecido de lo descartado, o **modo nodos poligonales arrastrables** (click para añadir puntos, arrastra para moverlos; estilo lazo de Photoshop) para conservar solo la forma que quieras; "Aplicar" hornea el recorte manteniendo lo visible exactamente en su sitio (también recorta la máscara del borrador). Además **Quitar barras negras** automática (letterbox de vídeos).
 - **Ajustes Rápidos:** Botones de encajar (*Fit*), rellenar (*Cover*), estirar (*Stretch*) y volver a la proporción original (*Original Shape*).
 - **Filtros Gráficos:** Efectos integrados en tiempo real (Escala de grises, Alto contraste, Sepia vintage y *Deep Fry* meme frito).
 - **Composición:** Opciones para cambiar relación de aspecto (1:1, 4:5, 4:3, 16:9, 9:16) y color de fondo.
@@ -63,7 +65,7 @@
 - **Configuración Milimétrica:** Posición X/Y en porcentaje, tamaño, opacidad, desenfoque y colores.
 - **Exportación Multiformato:** Descarga directa en `PNG` (máxima fidelidad), `JPG` (tamaño ligero) o `WebP` (optimizado para web).
 - **Resoluciones Predefinidas:** Original (las dimensiones reales de tu lienzo, siempre sin deformar), 1080×1080 (Instagram Post), 1200×1200, 1080×1920 (TikTok/Reels/Stories) y 1920×1080 (YouTube/Twitter). La exportación compone a resolución real en el preset elegido (sin estirar la vista previa).
-- **Copiar al Portapapeles:** Copia directa en memoria como PNG para pegar inmediatamente en Discord, Telegram, WhatsApp Web o redes sociales.
+- **Copiar al Portapapeles:** Copia directa en memoria como PNG para pegar inmediatamente en Discord, Telegram, WhatsApp Web o redes sociales. En la APK Android la copia y el pegado son en sí **nativos** (`AndroidSaver.copyImage`/`readImage` via FileProvider URI): funciona incluso sin `navigator.clipboard` (`file://`).
 
 ### 🌐 Catálogo y Plantillas Virales
 - Plantillas locales integradas listas para usar.
@@ -109,19 +111,22 @@ memes/
 │   └── icons/ + favicon.png   # Iconos 192/512/maskable + favicon
 ├── server.py                  # Entrypoint: carga Settings y lanza uvicorn
 ├── memestudio/                # Backend hexagonal: config, domain/, ports/, adapters/, app/ (routers FastAPI)
-├── tests/                     # Suite de tests: pytest (backend) y node --test tests/js (frontend puro)
+├── tests/                     # Suite de tests: pytest (backend) y node --test tests/js (frontend puro, incluye el contrato del puente Android)
 ├── requirements.txt            # Dependencias de Python (FastAPI, Rembg con backend CPU, Pillow, Uvicorn)
 ├── opencode.json              # Configuración de OpenCode: registra el servidor MCP del grafo de Graphify
 ├── .gitattributes              # Merge driver de Graphify para fusionar graph.json sin conflictos
 ├── tools/
 │   ├── remove_bg.py            # Script CLI para procesar imágenes locales desde terminal
 │   ├── remove_bg.bat           # Wrapper por lotes para ejecución rápida en Windows
+│   ├── bump_version.py         # Versionado automático: ?v=N + sync de assets Android en cada commit (hook)
+│   ├── podman_publish.sh       # Publicación multi-arch (PC amd64 + Raspberry Pi arm64) del contenedor
+│   ├── build_apk.sh            # Compila APK debug/release firmada y .aab de Play sin Android Studio
 │   └── refresh_graph_docs.py   # Hook helper: sincroniza estadísticas del grafo en AGENTS.md
 │   └── install_graphify_hooks.sh # Instalación completa de Graphify en clones nuevos (hooks + stats)
 ├── graphify-out/               # Grafo de conocimiento (Graphify): graph.json + GRAPH_REPORT.md
 ├── android/                    # App Android (APK): WebView Kotlin que reutiliza el frontend web
-│   ├── app/                    # Proyecto Gradle (build.gradle, manifest, MainActivity.kt, assets/)
-│   └── README_ANDROID.md       # Instrucciones de compilación del APK y límites del móvil
+│   ├── app/                    # Proyecto Gradle (build.gradle, manifest, MainActivity.kt, assets/, FileProvider)
+│   └── README_ANDROID.md       # Compilación CLI, APK firmada, .aab de Play y límites del móvil
 ├── Dockerfile                  # Imagen multi-arch (x86/ARM) del stack completo
 ├── docker-compose.yml          # Orquestación con volumen de modelos y healthcheck
 ├── .gitignore                  # Archivos y carpetas excluidos del control de versiones
@@ -288,9 +293,17 @@ El backend detecta la arquitectura de la máquina al arrancar:
 
 ---
 
-### 6. App Android (APK)
+### 6. App Android (APK / Play Store)
 
-El repo incluye un proyecto Android nativo (`android/`, WebView Kotlin) que empaqueta el editor tal cual y guarda los exportes en la **galería del móvil**. Compílalo con Android Studio (`File > Open` sobre `android/` → `Build APK(s)`); instrucciones completas, límites del móvil y el modo de conectar el backend rembg vía "Servidor IA" están en [`android/README_ANDROID.md`](android/README_ANDROID.md).
+El repo incluye un proyecto Android nativo (`android/`, WebView Kotlin) que empaqueta el editor tal cual: guardado en **galería** (`Pictures/MemeStudioPro`) vía bridge `AndroidSaver`, **copiar/pegar nativos** (FileProvider), file chooser para subir imágenes y logo de marca de agua, y sincronización con el backend vía "Servidor IA". Compílalo sin Android Studio con:
+
+```bash
+tools/build_apk.sh         # APK debug (installable directo)
+tools/build_apk.sh release # APK release firmada (keystore en android/keystore/)
+tools/build_apk.sh bundle  # .aab firmado para Google Play
+```
+
+La primera vez descarga JDK 17 + Gradle 8.7 a `~/jdks` (el README_ANDROID lo detalla). Instrucciones completas, el APK firmado, el `.aab`, el backup del keystore y los límites del móvil están en [`android/README_ANDROID.md`](android/README_ANDROID.md). Un **test de contrato** (`tests/js/android_bridge.test.mjs`) garantiza que `app.mjs` y `MainActivity.kt` no se desincronizan.
 
 ---
 
@@ -298,8 +311,8 @@ El repo incluye un proyecto Android nativo (`android/`, WebView Kotlin) que empa
 
 La app es una **PWA instalable**: desde Chrome o Edge (escritorio o móvil, `http://localhost:5005` en el PC o `http://IP-del-PC:5005` en la LAN) usa el icono/botón **«Instalar app»** y quedarás con tu propio icono, ventana propia y la interfaz **en caché offline**.
 
-- **Service worker** (`sw.js`): cachea la interfaz (estáticos y fuentes); las llamadas a `/api/*` siempre van a la red (la IA necesita el servidor).
-- Los assets cacheados se invalidan solos al subir el `?v=N` del HTML.
+- **Service worker** (`sw.js` v2): los documentos de la app (HTML/CSS/JS) van **network-first** — conectado, siempre ves la versión del servidor; el cache queda como fallback offline. Fuentes/iconos van cache-first (no cambian).
+- El cache-busting `?v=N` de los assets se **automatizó con un hook de Git** (`tools/bump_version.py`): en cada commit sube solo la versión de lo tocado, re-sincroniza los assets Android y purga caches viejos del SW.
 - En la app Android APK esto no aplica: la WebView ya instala la interfaz como assets (`file://`), sin service worker.
 - **Deep-link para compartir un borrador:** `http://localhost:5005/?img=<url-de-imagen>&t1=<texto superior>&t2=<texto inferior>` abre el editor con la imagen y los dos textos precargados.
 
@@ -404,6 +417,14 @@ Búsqueda de memes en Reddit vía el archivo público de Arctic Shift (sin clave
 - **Query:** `q=<texto>` (opcional), `limit=<n>` (max 24)
 - **Respuesta:** mismo shape que `/api/meme-search`; las `url` van por `/api/meme-image` (dominios permitidos: imgflip, redd.it, imgur).
 
+### Auth (`REQUIRE_LOGIN=1`): `POST /api/auth/register` · `/api/auth/login` · `/api/auth/logout` · `GET /api/auth/me`
+Cuentas reales con cookie de sesión `HttpOnly/SameSite=Lax` (`Secure` con `PUBLIC_HTTPS=1`):
+- **`register`** `{username, password}` (min 8 chars) — crea cuenta y abre sesión; rate-limit por IP.
+- **`login`** `{username, password}` — abre sesión (hash scrypt).
+- **`logout`** — cierra la sesión.
+- **`me`** — `{"user", "auth_required", "registration_open"}`; el front lo consulta al arrancar y ante un `401` de cualquier llamado a `/api/*` reabre el modal de login.
+Prioridad: `AUTH_USERS` (Basic) > `REQUIRE_LOGIN=1` (cuentas) > abierto.
+
 ### `POST /api/draft` / `GET /api/draft`
 Sincronización de borradores entre dispositivos (móvil ↔ PC). Cada usuario guarda **su** borrador completo (JSON con imagen en dataURL, capas, posiciones, filtros y ajustes) en `drafts/<usuario>.json`; el usuario lo identifica la sesión de su cuenta (`REQUIRE_LOGIN=1`), la Basic Auth (`AUTH_USERS`), o es `local` si el servidor corre sin contraseña.
 - **`POST`:** body = borrador JSON (máx `DRAFT_MAX_MB` MB) → `{"ok":true,"user","bytes","saved_at"}`
@@ -448,6 +469,7 @@ graphify hook install   # re-instala los bloques de Graphify en .git/hooks (reco
 - **Tras cada `commit`, `checkout` de rama, `merge` o `rewrite`:**
   1. Graphify reconstruye `graph.json`, `GRAPH_REPORT.md` y el visor HTML de forma incremental (solo archivos cambiados, sin llamadas a LLM).
   2. `tools/refresh_graph_docs.py` sincroniza el bloque de estadísticas `<!-- graphify-stats -->` de `AGENTS.md` con el grafo vigente.
+  3. `tools/bump_version.py` (si hay cambios en `public/`) sube el `?v=N` de los assets tocados, re-sincroniza los assets de la APK y commita `chore(release): bump…` — los commits vasi por delante siempre pegados.
 - **Regla para agentes:** ante preguntas de estructura, llamadores o impacto de un cambio, consultar primero el grafo (vía MCP `query_graph`, `get_node`, `shortest_path`) o el CLI (`graphify query/explain/path/affected`), y reservar `grep` para cadenas exactas.
 
 ---
