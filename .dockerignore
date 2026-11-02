@@ -1,0 +1,17 @@
+# Exclude heavy/local context from the build context
+.git
+.gitignore
+.gitattributes
+.kindex
+graphify-out
+.venv
+venv
+__pycache__
+**/__pycache__
+*.pyc
+tools
+docs
+*.md
+docker-compose.yml
+Dockerfile
+.dockerignore
