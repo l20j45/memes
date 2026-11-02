@@ -59,6 +59,7 @@
 
 ### 🏷️ Marca de Agua y Exportación
 - **Presets de Marca de Agua:** Esquina inferior, Centro de seguridad o Sutil.
+- **Marca de Agua de Imagen (logo):** además del texto, elige tu logo (PNG con transparencia) con ancho relativo al lienzo; opacidad, posición, desenfoque y sombra compartidas con el texto. Persiste en autosave y en borradores remotos.
 - **Configuración Milimétrica:** Posición X/Y en porcentaje, tamaño, opacidad, desenfoque y colores.
 - **Exportación Multiformato:** Descarga directa en `PNG` (máxima fidelidad), `JPG` (tamaño ligero) o `WebP` (optimizado para web).
 - **Resoluciones Predefinidas:** Original, 1080×1080 (Instagram Post), 1200×1200, 1080×1920 (TikTok/Reels/Stories) y 1920×1080 (YouTube/Twitter).

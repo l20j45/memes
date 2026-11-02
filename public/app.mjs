@@ -162,7 +162,7 @@ function buildSnapshot() {
     layers: state.layers,
     bar: state.bar,
     upper: state.upper,
-    wm: state.wm,
+    wm: wmForSerialize(),
     imgs: state.imgs.map((m) => ({
       x: m.x,
       y: m.y,
@@ -178,6 +178,43 @@ function buildSnapshot() {
 function updateUndoBtns() {
   $('#undoBtn').disabled = state.hIndex <= 0;
   $('#redoBtn').disabled = state.hIndex >= state.history.length - 1;
+}
+
+// --- Marca de agua: serialización img/texto (compartida por historial,
+// autosave local y borrador remoto; el canvas se guarda como dataURL) ---------
+function wmForSerialize() {
+  const wm = state.wm || {};
+  return {
+    ...wm,
+    img: wm.img && wm.img.c
+      ? { w: Number(wm.img.w) || .18, src: wm.img.c.toDataURL('image/png') }
+      : null
+  };
+}
+
+async function wmFromSerialized(wmSaved) {
+  const wm = { ...state.wm, ...(wmSaved || {}) };
+  const src = wmSaved && wmSaved.img && wmSaved.img.src;
+  if (src) {
+    try {
+      const img = new Image();
+      img.src = src;
+      await img.decode();
+      const c = document.createElement('canvas');
+      c.width = img.width;
+      c.height = img.height;
+      c.getContext('2d').drawImage(img, 0, 0);
+      wm.img = { c, w: Number(wmSaved.img.w) || .18 };
+      wm.mode = 'img';
+    } catch {
+      wm.img = null;   // logo corrupto: cae a texto, no rompe el restore
+      wm.mode = 'text';
+    }
+  } else {
+    wm.img = null;
+    if (wmSaved && wmSaved.mode === 'img') wm.mode = 'text'; // sin logo no hay modo imagen
+  }
+  return wm;
 }
 
 function pushHistory() {
@@ -201,7 +238,7 @@ async function loadState(idx) {
   state.layers = data.layers;
   state.bar = data.bar;
   state.upper = data.upper;
-  state.wm = { ...state.wm, ...(data.wm || {}) };
+  state.wm = await wmFromSerialized(data.wm);
 
   state.imgs = await Promise.all((data.imgs || []).map(async (m) => {
     const img = new Image();
@@ -456,12 +493,32 @@ function draw(exp = false) {
   });
 
   if (state.wm.enabled) {
-    const txt = (state.wm.text || '').trim();
+    const Wm = state.wm;
+    const isImage = (Wm.mode || 'text') === 'img' && Wm.img && Wm.img.c;
+    const imageBox = isImage ? getWatermarkBox(cx, W, H) : null;
+    cx.save();
+    cx.filter = `blur(${Number(Wm.blur ?? 0)}px)`;
+    cx.globalAlpha = normalizeOpacity(Wm.opacity ?? .8);
+
+    if (isImage && imageBox) {
+      cx.shadowColor = Wm.shadow || '#000000';
+      cx.shadowBlur = Number(Wm.shadowBlur ?? 0);
+      cx.drawImage(Wm.img.c, imageBox.x, imageBox.y, imageBox.w, imageBox.h);
+      if (state.selK === 'wm') {
+        cx.setLineDash([10, 8]);
+        cx.strokeStyle = '#7b93ff';
+        cx.lineWidth = Math.max(2, W / 400);
+        cx.strokeRect(imageBox.x - 8, imageBox.y - 8, imageBox.w + 16, imageBox.h + 16);
+        cx.setLineDash([]);
+      }
+      cx.restore();
+      return;
+    }
+
+    const txt = (Wm.mode || 'text') === 'text' ? (Wm.text || '').trim() : '';
     if (txt) {
-      const Wm = state.wm;
       const px = W * (Wm.x ?? .82);
       const py = H * (Wm.y ?? .92);
-      cx.save();
       cx.font = `700 ${Math.round(Wm.size || 28)}px sans-serif`;
       cx.textAlign = Wm.align || 'right';
       cx.textBaseline = 'middle';
@@ -469,8 +526,6 @@ function draw(exp = false) {
       cx.strokeStyle = Wm.stroke || '#0b1220';
       cx.shadowColor = Wm.shadow || '#000000';
       cx.shadowBlur = Number(Wm.shadowBlur ?? 0);
-      cx.filter = `blur(${Number(Wm.blur ?? 0)}px)`;
-      cx.globalAlpha = normalizeOpacity(Wm.opacity ?? .8);
       cx.lineWidth = 2;
       cx.strokeText(txt, px, py);
       cx.fillText(txt, px, py);
@@ -483,6 +538,8 @@ function draw(exp = false) {
           cx.setLineDash([]);
         }
       }
+      cx.restore();
+    } else {
       cx.restore();
     }
   }
@@ -766,11 +823,18 @@ function syncImgs() {
 
 function syncWatermarkControls() {
   const wm = state.wm;
+  const isText = (wm.mode || 'text') === 'text';
   $('#wmCheck').checked = !!wm.enabled;
   $('#wmLock').checked = !!wm.locked;
+  $('#wmModeText').checked = isText;
+  $('#wmModeImg').checked = !isText;
+  $('#wmTextUI').hidden = !isText;
+  $('#wmImgUI').hidden = isText;
   $('#wmText').value = wm.text || 'miweb.com';
   $('#wmX').value = Math.round((wm.x ?? .82) * 100);
   $('#wmY').value = Math.round((wm.y ?? .92) * 100);
+  $('#wmImgW').value = Math.round((wm.img?.w ?? .18) * 100);
+  $('#wmImgWV').textContent = Math.round((wm.img?.w ?? .18) * 100) + '%';
   $('#wmSize').value = wm.size ?? 28;
   $('#wmOpacity').value = wm.opacity ?? .8;
   $('#wmBlur').value = wm.blur ?? 0;
@@ -1391,7 +1455,7 @@ document.addEventListener('visibilitychange', () => {
   }
 });
 
-function loadLocal() {
+async function loadLocal() {
   try {
     const raw = localStorage.getItem('meme_studio_draft');
     if (!raw) return;
@@ -1402,7 +1466,7 @@ function loadLocal() {
     state.bar = data.bar ?? 0;
     state.upper = data.upper ?? true;
     state.guides = !!(data.guides ?? state.guides);
-    state.wm = { ...state.wm, ...(data.wm || {}) };
+    state.wm = await wmFromSerialized(data.wm);
     if (data.bg) $('#bg').value = data.bg;
     if (data.bgTransparent !== undefined) $('#bgTransparent').checked = !!data.bgTransparent;
   } catch (error) {
@@ -1425,7 +1489,7 @@ function remoteDraftPayload() {
     guides: state.guides,
     bg: $('#bg').value,
     bgTransparent: $('#bgTransparent').checked,
-    wm: state.wm,
+    wm: wmForSerialize(),
     savedAt: Date.now(),
     imgs: state.imgs.map((m) => ({
       x: m.x,
@@ -1471,7 +1535,7 @@ async function restoreRemoteDraft(data) {
   state.bar = data.bar ?? 0;
   state.upper = data.upper ?? true;
   state.guides = !!(data.guides ?? state.guides);
-  state.wm = { ...state.wm, ...(data.wm || {}) };
+  state.wm = await wmFromSerialized(data.wm);
   if (data.bg) $('#bg').value = data.bg;
   if (data.bgTransparent !== undefined) $('#bgTransparent').checked = !!data.bgTransparent;
 
@@ -2192,6 +2256,76 @@ function initEvents() {
     button.addEventListener('click', () => applyWatermarkPreset(button.dataset.wmPreset));
   });
 
+  // --- Marca de agua: modo texto/imagen y logo -------------------------------
+  const setWatermarkMode = (mode) => {
+    state.wm.mode = mode;
+    state.selK = state.wm.enabled ? 'wm' : state.selK;
+    if (mode === 'img' && !state.wm.img) {
+      toast('Elegir logo: pulsa "Logo…" y usa un PNG con transparencia.');
+    }
+    syncWatermarkControls();
+    pushHistory();
+    saveLocal();
+    schedule();
+  };
+  $('#wmModeText').addEventListener('change', () => setWatermarkMode('text'));
+  $('#wmModeImg').addEventListener('change', () => setWatermarkMode('img'));
+
+  const wmLogoFile = $('#wmLogoFile');
+  $('#wmLogoBtn').onclick = () => wmLogoFile.click();
+  wmLogoFile.addEventListener('change', async () => {
+    const file = wmLogoFile.files && wmLogoFile.files[0];
+    wmLogoFile.value = '';
+    if (!file || !file.type || !file.type.startsWith('image/')) {
+      toast('No es una imagen válida para el logo.', true);
+      return;
+    }
+    try {
+      let bmp;
+      try {
+        bmp = await createImageBitmap(file, { imageOrientation: 'from-image' });
+      } catch {
+        bmp = await createImageBitmap(file);
+      }
+      // El logo se guarda pequeño (max 512px en su lado largo): peso minimo en
+      // los snapshots y en el borrador remoto sin perder nitidez al escalar.
+      const k = Math.min(1, 512 / Math.max(bmp.width, bmp.height));
+      const c = document.createElement('canvas');
+      c.width = Math.max(1, Math.round(bmp.width * k));
+      c.height = Math.max(1, Math.round(bmp.height * k));
+      c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+      state.wm.img = { c, w: state.wm.img?.w ?? .18 };
+      state.wm.mode = 'img';
+      state.wm.enabled = true;
+      $('#wmCheck').checked = true;
+      state.selK = 'wm';
+      toast(`Logo cargado (${c.width}×${c.height}).`);
+      syncWatermarkControls();
+      pushHistory();
+      saveLocal();
+      schedule();
+    } catch (error) {
+      console.error(error);
+      toast('No se pudo abrir ese logo.', true);
+    }
+  });
+  $('#wmLogoClear').onclick = () => {
+    state.wm.img = null;
+    if (state.wm.mode === 'img') state.wm.mode = 'text';
+    toast('Logo quitado.');
+    syncWatermarkControls();
+    pushHistory();
+    saveLocal();
+    schedule();
+  };
+
+  $('#wmImgW').addEventListener('input', (event) => {
+    if (!state.wm.img) state.wm.img = { w: .18 };
+    state.wm.img.w = Number(event.target.value) / 100;
+    $('#wmImgWV').textContent = event.target.value + '%';
+    schedule();
+  });
+
   $('#addBtn').onclick = () => {
     const base = cur() || {};
     state.layers.push(mk('Nuevo texto', { y: .5, f: base.f, fill: base.fill, stroke: base.stroke, s: base.s, sw: base.sw }));
@@ -2480,7 +2614,7 @@ function initEvents() {
   bindControl('sw', 'sw', true);
 
   buildTemplates();
-  loadLocal();
+  loadLocal().catch((error) => console.warn('Autosave corrupto:', error));
   if (!state.layers.length) {
     state.layers = [mk('', { y: .1 }), mk('', { y: .9 })];
     state.sel = 0;
