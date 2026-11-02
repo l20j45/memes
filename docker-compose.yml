@@ -1,11 +1,7 @@
-# Meme Studio Pro — todo-en-uno en Docker (frontend + API de IA).
-# Uso:
-#   docker compose up -d --build        # arrancar
-#   docker compose logs -f memestudio   # ver logs
-#   docker compose down                 # parar
-#
-# Gracias al volumen "models", los pesos de rembg se descargan UNA sola vez
-# (la primera petición) y persisten entre reinicios y actualizaciones de imagen.
+# Meme Studio Pro — Docker
+# Toda la configuración va en .env (ver .env.example): copialo a .env y
+# docker compose lo integra interpola/inyecta en el contenedor con estos
+# valores por defecto.
 
 services:
   memestudio:
@@ -14,11 +10,17 @@ services:
     container_name: memestudio
     restart: unless-stopped
     ports:
-      - "5005:5005"
+      # HOST_PORT (host) -> 5005 (fijo dentro del contenedor, ver .env.example)
+      - "${HOST_PORT:-5005}:5005"
     environment:
-      # Empty => automatic model selection (u2netp on ARM, u2net on x86).
-      # Examples: REMBG_MODEL=u2netp | u2net | isnet-general-use
+      # Configuración (todo documentado en .env.example)
       - REMBG_MODEL=${REMBG_MODEL:-}
+      - CORS_ORIGINS=${CORS_ORIGINS:-*}
+      - REDDIT_SUBS=${REDDIT_SUBS:-}
+      - REDDIT_TERMS=${REDDIT_TERMS:-}
+      - MEME_CACHE_TTL=${MEME_CACHE_TTL:-300}
+      - IMG_CACHE_MAX=${IMG_CACHE_MAX:-120}
+      # Dentro del contenedor el puerto/puerto base es siempre 5005
       - PORT=5005
     volumes:
       # Persistent rembg model cache (both possible locations it uses)

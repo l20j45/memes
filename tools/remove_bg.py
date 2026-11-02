@@ -28,6 +28,20 @@ def main() -> None:
 
     with Image.open(input_path) as img:
         result = remove(img)
+
+        # Auto-crop: elimina el area 100% transparente sobrante (bounding box
+        # del canal alfa), con un pequeno margen anti-aliasing.
+        bbox = result.getchannel('A').getbbox()
+        if bbox:
+            w, h = result.size
+            pad = max(1, min(w, h) // 200)
+            result = result.crop((
+                max(0, bbox[0] - pad),
+                max(0, bbox[1] - pad),
+                min(w, bbox[2] + pad),
+                min(h, bbox[3] + pad),
+            ))
+
         if output_path.suffix.lower() in ('.jpg', '.jpeg'):
             # JPEG no admite canal alfa (transparencia)
             rgb = Image.new('RGB', result.size, (255, 255, 255))
