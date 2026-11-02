@@ -115,6 +115,7 @@ memes/
 │   ├── remove_bg.py            # Script CLI para procesar imágenes locales desde terminal
 │   ├── remove_bg.bat           # Wrapper por lotes para ejecución rápida en Windows
 │   └── refresh_graph_docs.py   # Hook helper: sincroniza estadísticas del grafo en AGENTS.md
+│   └── install_graphify_hooks.sh # Instalación completa de Graphify en clones nuevos (hooks + stats)
 ├── graphify-out/               # Grafo de conocimiento (Graphify): graph.json + GRAPH_REPORT.md
 ├── android/                    # App Android (APK): WebView Kotlin que reutiliza el frontend web
 │   ├── app/                    # Proyecto Gradle (build.gradle, manifest, MainActivity.kt, assets/)
