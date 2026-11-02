@@ -1,7 +1,7 @@
 # Graph Report - memes  (2026-11-02)
 
 ## Corpus Check
-- 68 files · ~52,564 words
+- 68 files · ~52,882 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 36 file(s) not represented in the graph (top: .xml 8, .bin 7, .properties 6)
 
@@ -11,7 +11,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `48306a33`
+- Built from commit: `24ec99b1`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -62,14 +62,14 @@
 ## Surprising Connections (you probably didn't know these)
 - `Conectar un agente al grafo (resumen)` --references--> `graph_stats()`  [INFERRED]
   README.md → tools/refresh_graph_docs.py
-- `Herramientas MCP (prefijo `graphify_`)` --references--> `graph_stats()`  [INFERRED]
-  AGENTS.md → tools/refresh_graph_docs.py
 - `Conectarse al grafo por MCP (otros agentes y clientes)` --references--> `graph_stats()`  [INFERRED]
   AGENTS.md → tools/refresh_graph_docs.py
-- `📊 Graphify — Grafo de Conocimiento del Código (contexto primario)` --references--> `graph_stats()`  [INFERRED]
+- `Herramientas MCP (prefijo `graphify_`)` --references--> `graph_stats()`  [INFERRED]
   AGENTS.md → tools/refresh_graph_docs.py
 - `🔍 Diagnóstico y Correcciones Recomendadas` --references--> `remove_bg()`  [INFERRED]
   README.md → memestudio/app/routers/images.py
+- `📊 Graphify — Grafo de Conocimiento del Código (contexto primario)` --references--> `graph_stats()`  [INFERRED]
+  AGENTS.md → tools/refresh_graph_docs.py
 
 ## Import Cycles
 - None detected.
