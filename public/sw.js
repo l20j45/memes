@@ -8,9 +8,9 @@ const ASSETS = [
   './styles.css',
   './app.mjs',
   './favicon.png',
-  './icon-192.png',
-  './icon-512.png',
-  './apple-touch-icon.png',
+  './icons/icon-192.png',
+  './icons/icon-512.png',
+  './icons/apple-touch-icon.png',
   'https://fonts.googleapis.com/css2?family=Anton&family=Comic+Neue:wght@700&family=Montserrat:wght@800&family=Oswald:wght@700&family=Space+Grotesk:wght@500;700&display=swap',
   'https://fonts.gstatic.com/'
 ];

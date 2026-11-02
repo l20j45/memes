@@ -59,10 +59,18 @@ También disponible desde aquí: los botones **"☁ Subir borrador" / "↧ Traer
 
 ## Actualizar el frontend de la app
 
-Los assets son una **copia** del frontend. Tras cambiar `memegnerator.html`/`app.mjs`/`styles.css` y subir el `?v=N` de cache-busting:
+Los assets son una **copia** del frontend (todo lo servible vive en `public/`). Tras cambiar ficheros en `public/` y subir el `?v=N` de cache-busting:
+
+```bash
+# macOS / Linux
+rm -rf android/app/src/main/assets/*
+cp -R public/. android/app/src/main/assets/
+```
 
 ```powershell
-Copy-Item memegnerator.html, app.mjs, styles.css, index.html android\app\src\main\assets\ -Force
+# Windows
+Remove-Item android\app\src\main\assets\* -Recurse -Force
+Copy-Item public\* android\app\src\main\assets\ -Recurse -Force
 ```
 
 y recompila el APK.

@@ -116,7 +116,7 @@ def create_app(settings: Settings) -> FastAPI:
         allow_headers=["*"],
     )
 
-    static_dir = settings.root
+    static_dir = settings.frontend_dir
 
     @app.get("/health")
     def health() -> dict:
