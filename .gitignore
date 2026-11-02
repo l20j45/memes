@@ -1,42 +1,43 @@
-# Entornos virtuales de Python
-.venv/
-venv/
-ENV/
-env/
 
-# Configuración local (usar .env.example como plantilla)
-.env
 
-# Lock del hook de rebuild de Graphify
-graphify-out/.rebuild.lock
 
-# Borradores remotos guardados por los usuarios (/api/draft)
-drafts/
 
-# Base de datos de cuentas y sesiones del login (data/, AUTH_DB por defecto)
-data/
 
-# Byte-compiled / cachés de Python
+
+
+
+
 __pycache__/
-*.py[cod]
-*$py.class
-*.pyc
-
-# Logs
-*.log
-memesp.log
-
-# KIndex (índice local regenerable: binario + db + grafos)
+.DS_Store
+.env
+.idea/
 .kindex/
-
+.venv/
+.vscode/
+*.log
+*.py[cod]
+*.pyc
+*.swp
+*$py.class
+# Archivos de sistema operativo y editores
+# Base de datos de cuentas y sesiones del login (data/, AUTH_DB por defecto)
+# Borradores remotos guardados por los usuarios (/api/draft)
+# Byte-compiled / cachés de Python
+# Configuración local (usar .env.example como plantilla)
+# Entornos virtuales de Python
 # Graphify: cachés de extracción (graph.json y GRAPH_REPORT.md SÍ se versionan)
-graphify-out/cache/
+# KIndex (índice local regenerable: binario + db + grafos)
+# Lock del hook de rebuild de Graphify
+# Logs
+android/keystore/
+data/
+drafts/
+env/
+ENV/
 graphify-out/.graphify_analysis.json
 graphify-out/.graphify_root
-
-# Archivos de sistema operativo y editores
-.DS_Store
+graphify-out/.rebuild.lock
+graphify-out/cache/
+memesp.log
 Thumbs.db
-.vscode/
-.idea/
-*.swp
+venv/

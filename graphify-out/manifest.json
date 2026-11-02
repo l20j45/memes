@@ -18,9 +18,9 @@
     "semantic_hash": ""
   },
   "AGENTS.md": {
-    "mtime": 1793653429.2656767,
-    "seen": 1793653444.917071,
-    "ast_hash": "363faf1164e0db9e3509572a5ad63da7",
+    "mtime": 1793653446.3993013,
+    "seen": 1793653696.758763,
+    "ast_hash": "fc08ed22473d50298995ea0a3c2ce3bc",
     "semantic_hash": ""
   },
   "README.md": {
@@ -66,21 +66,21 @@
     "semantic_hash": ""
   },
   "android/build.gradle": {
-    "mtime": 1793638486.3347192,
-    "seen": 1793642089.694526,
-    "ast_hash": "e6c668c1daecc97a9f8c2be8a0967a42",
+    "mtime": 1793653598.139663,
+    "seen": 1793653696.758734,
+    "ast_hash": "7746d4bd2940411ebe1bfb07e21a214e",
     "semantic_hash": ""
   },
   "android/settings.gradle": {
-    "mtime": 1793638486.3350708,
-    "seen": 1793642089.694527,
-    "ast_hash": "68e1a183bb80fbdb190d4232822723b5",
+    "mtime": 1793653598.139676,
+    "seen": 1793653696.7587352,
+    "ast_hash": "c8f0fc0ea9cc17d40276d5542f42799f",
     "semantic_hash": ""
   },
   "android/README_ANDROID.md": {
-    "mtime": 1793641951.4866009,
-    "seen": 1793642089.694549,
-    "ast_hash": "194d822416392e6b3716feae64b7ff15",
+    "mtime": 1793653690.3110874,
+    "seen": 1793653696.758764,
+    "ast_hash": "237473a5f35b7ef0103964991b0bafe3",
     "semantic_hash": ""
   },
   "android/app/src/main/assets/index.html": {
@@ -495,6 +495,12 @@
     "mtime": 1793653156.0650496,
     "seen": 1793653444.917069,
     "ast_hash": "e6b09bd9563e29c1457837b85429287c",
+    "semantic_hash": ""
+  },
+  "tools/build_apk.sh": {
+    "mtime": 1793653682.4915278,
+    "seen": 1793653696.758759,
+    "ast_hash": "3ccc686f5ff36ba412080ab13beb9fbe",
     "semantic_hash": ""
   }
 }

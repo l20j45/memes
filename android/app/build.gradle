@@ -3,6 +3,10 @@ plugins {
     id 'org.jetbrains.kotlin.android'
 }
 
+// Firma de release OPCIONAL: si existe android/keystore/memestudio.properties
+// (git-ignorado) la APK release sale firmada; si no, sale unsigned.
+def keystorePropsFile = rootProject.file("keystore/memestudio.properties")
+
 android {
     namespace 'com.memestudiopro.app'
     compileSdk 35
@@ -15,10 +19,28 @@ android {
         versionName "1.0"
     }
 
+    signingConfigs {
+        release {
+            if (keystorePropsFile.exists()) {
+                def props = new Properties()
+                keystorePropsFile.withReader('UTF-8') { props.load(it) }
+                // storeFile relativo a la carpeta android/keystore/
+                def keystoreDir = keystorePropsFile.parentFile
+                storeFile file(new File(keystoreDir, props.storeFile).absolutePath)
+                storePassword props.storePassword
+                keyAlias props.keyAlias
+                keyPassword props.keyPassword
+            }
+        }
+    }
+
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            if (keystorePropsFile.exists()) {
+                signingConfig signingConfigs.release
+            }
         }
     }
     compileOptions {

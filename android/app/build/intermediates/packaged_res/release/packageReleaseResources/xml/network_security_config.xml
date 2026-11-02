@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Permite HTTP en claro para conectar el backend de IA (server.py) en un PC
+     de la red local (http://192.168.x.x:5005). El trafico externo sigue siendo
+     HTTPS (imgflip, reddit/arctic-shift). Es una app de uso personal; si se
+     distribuye publicamente, conviene servir el backend por HTTPS. -->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true" />
+</network-security-config>
