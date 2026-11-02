@@ -37,6 +37,7 @@ Este documento describe la arquitectura, flujo de datos, convenciones y peculiar
 | `public/icons/` | `icon-192.png` / `icon-512.png` / `apple-touch-icon.png` (misma estética del favicon, PNG generado). |
 | `docs/` | Capturas del editor (`screenshot-*.png`) incrustadas en el README. |
 | `tools/remove_bg.py` | Script de línea de comandos para quitar fondos a imágenes individuales. |
+| `tools/bump_version.py` | Automatización del versionado del front: al commitear cambios de `public/` sube solo el `?v=N` de los assets tocados (app.mjs/styles.css), sube el nombre del cache del SW si cambia `sw.js`, re-sincroniza los assets del APK y commita como `chore(release)` con marcador `[skip-bump]` (antibuclado). Instalar en clones nuevos con `python3 tools/bump_version.py --install` (idempotente). |
 | `tools/remove_bg.bat` | Script batch para invocar `tools/remove_bg.py` en entornos Windows. |
 | `tools/refresh_graph_docs.py` | Hook helper: sincroniza el bloque de estadísticas de Graphify en `AGENTS.md` con `graphify-out/graph.json` tras cada commit/cambio de rama. |
 | `README.md` | Documentación para usuarios finales y desarrolladores humanos. |
@@ -163,7 +164,7 @@ El parser de esta versión **no extrae símbolos de archivos `.py` ni `.mjs`** (
 Graphify (v0.9.100) construye y mantiene el grafo de conocimiento **real** del proyecto con tree-sitter AST (sí compiló `server.py`, `app.mjs`, `tools/remove_bg.py`; respeta `.gitignore`, así que `.venv/` y `.kindex/` están excluidos). Almacena el grafo en modo local/offline; el código se parsea sin LLM.
 
 <!-- graphify-stats:start -->
-> Grafo actualizado automáticamente por Git hooks (tools/refresh_graph_docs.py): **653 nodos · 1376 aristas · 44 comunidades** · commit de extracción `92e987398`. Detalles vivos: `graphify-out/GRAPH_REPORT.md` y `graph_stats` (MCP).
+> Grafo actualizado automáticamente por Git hooks (tools/refresh_graph_docs.py): **663 nodos · 1402 aristas · 36 comunidades** · commit de extracción `8d060b940`. Detalles vivos: `graphify-out/GRAPH_REPORT.md` y `graph_stats` (MCP).
 <!-- graphify-stats:end -->
 
 ### Configuración actual
