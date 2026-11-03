@@ -6,9 +6,9 @@ Binarios de Android listos para instalar, construidos desde el código fuente de
 
 | Archivo | Para qué |
 | :--- | :--- |
-| [`MemeStudioPro-1.1.apk`](MemeStudioPro-1.1.apk) | **Instala esto** en el móvil (APK release, firmada) — añade figuras cuadros-de-texto (`versionCode 2`) |
-| `MemeStudioPro-1.0.apk` / `MemeStudioPro-1.0.aab` | Release anterior (histórico) |
-| `MemeStudioPro-1.1.aab` | Formato de **Google Play** (no instala directo; lo sube la Play Console) |
+| [`MemeStudioPro-1.2.apk`](MemeStudioPro-1.2.apk) | **Instala esto** en el móvil (APK release, firmada) — añade triángulo/flecha/línea/bocadillo (`versionCode 3`) |
+| `MemeStudioPro-1.0.apk` / `MemeStudioPro-1.0.aab` / `MemeStudioPro-1.1.*` | Releases anteriores (histórico) |
+| `MemeStudioPro-1.2.aab` | Formato de **Google Play** (no instala directo; lo sube la Play Console) |
 
 Instalación del APK:
 1. Copia `MemeStudioPro-1.0.apk` al móvil y ábrelo (o `adb install MemeStudioPro-1.0.apk`).
@@ -20,6 +20,8 @@ Features de la build: editor completo con capas, **recorte por nodos**, **marca 
 ## Verificación de integridad (SHA-256)
 
 ```
+1353e2ad9dbacf9eb7c420d0a22cd93d7dc5ed994cacca0f7a3ac3f9c1e83837  MemeStudioPro-1.2.apk
+e426273ba9fff5a0e6ab67b8502d8c2572307d56fd94a9e58e0f72984ee1340c  MemeStudioPro-1.2.aab
 a21538ee9a817f141ec38c0baaf7a30b8eef2062388bdc8959df80748acbcb9b  MemeStudioPro-1.1.apk
 74e97a584c5f45acd395f7bc1175d221a2f4e84bb7452ee4affcafb08c4f9e0f  MemeStudioPro-1.1.aab
 8e1818f6af0aa91548fadbc4170fda266235b897cce3b38aa447fe062f5c9fa3  MemeStudioPro-1.0.apk
@@ -30,7 +32,7 @@ Comprueba en el teléfono/máquina: `shasum -a 256 MemeStudioPro-1.0.apk` (Linux
 
 ## Detalles de la build
 
-- **Versión actual:** 1.1 (`versionCode 2`) · **minSdk 24** (Android 7.0+) · targetSdk 35. _1.0 = versión histórica (sin figuras)._
+- **Versión actual:** 1.2 (`versionCode 3`) · **minSdk 24** (Android 7.0+) · targetSdk 35. _1.0/1.1 = versiones históricas._
 - **Firma:** release, certificado `CN=Meme Studio Pro, OU=ReleaseKey` — las **actualizaciones** de estas APK exigen el mismo certificado (ver warning del keystore en [`android/README_ANDROID.md`](../android/README_ANDROID.md#apk-de-release-firmada)).
 - Front incluido: estado del commit indicado abajo; el editor NO se auto-actualiza en la APK (una nueva build de front requiere una APK nueva).
 - Construida con `tools/build_apk.sh release` / `bundle` (ver receta en `android/README_ANDROID.md`).
