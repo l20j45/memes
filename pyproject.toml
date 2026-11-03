@@ -1,0 +1,27 @@
+# Meme Studio Pro — proyecto gestionado por uv
+# Las dependencias veloces se gestionan con uv: `uv sync` crea/reusa el
+# .venv y `uv run server.py` arranca la app. requirements.txt sigue en el
+# repo como ESPEJO para Docker y para CLIs de pip (son la misma lista:
+# mantener sincronizadas las dos si cambias deps).
+[project]
+name = "memestudio"
+version = "1.2.0"
+description = "Meme Studio Pro - editor de memes con capa IA (rembg)"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "fastapi>=0.111.0",
+    "uvicorn[standard]>=0.29.0",
+    "rembg[cpu]>=2.0.57",
+    "Pillow>=10.0.0",
+    "python-multipart>=0.0.9",
+]
+
+# pytest vive aqui (uv sync instala este grupo por defecto con sync/run)
+[dependency-groups]
+dev = ["pytest>=8.0", "httpx2>=0.0"]  # httpx2 = TestClient de starlette
+
+# Solo deps: el "paquete" NO es instalable (server.py corre desde la raiz);
+# asi uv no intenta compilar/editar el proyecto y solo instala el env.
+[tool.uv]
+package = false
