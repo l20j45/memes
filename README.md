@@ -139,9 +139,9 @@ memes/
 
 ## 📦 Requisitos Previos
 
-1. **Python 3.10 o superior** (para ejecutar el servidor de IA y el script CLI).
-2. **Navegador web moderno** (Google Chrome, Microsoft Edge, Mozilla Firefox o Safari) con soporte para ES Modules y Canvas 2D.
-3. *Opcional:* Node.js (si deseas utilizar servidores estáticos como `serve` o `live-server`).
+1. **uv** (recomendado, gestiona el `.venv` desde `pyproject.toml` + `uv.lock`): [docs de instalación](https://docs.astral.sh/uv/) — `./run.sh` lo detecta y lo usa solo. Sin uv funciona igual con `.venv` + pip.
+2. **Python 3.10 o superior** (el fallback sin uv necesita el python del sistema para crear el venv; con uv lo trae también).
+3. **Navegador web moderno** (Chrome, Edge, Firefox o Safari) con ES Modules y Canvas 2D.
 
 ---
 
@@ -153,7 +153,18 @@ Abre tu terminal en la carpeta del proyecto:
 cd <ruta/al/proyecto>  # p. ej. ~/proyectos/memes en Linux, C:\Proyectos\memes en Windows
 ```
 
-### 2. Crear y activar el entorno virtual de Python
+### 2. Crear y activar el entorno virtual
+
+**Modo recomendado (uv):** `uv sync` instala las dependencias exactas del `uv.lock` en el `.venv` del repo (creado en el mismo paso; `./run.sh` lo hace automáticamente):
+
+```bash
+uv sync                    # deps de runtime (fastapi, rembg[cpu]...) + grupo dev (pytest)
+uv run server.py           # correr la app con el entorno del proyecto
+uv run pytest tests/       # tests backend
+```
+
+**Fallback clásico (pip):**
+
 ```powershell
 # En Windows (PowerShell)
 python -m venv .venv
@@ -162,10 +173,7 @@ python -m venv .venv
 
 ### 3. Instalar dependencias
 > [!IMPORTANT]
-> Es crucial instalar `rembg[cpu]` (o `rembg[gpu]` si cuentas con soporte CUDA) para que se incluya el motor de inferencia ONNX.
-```powershell
-pip install -r requirements.txt
-```
+> `rembg[cpu]` es crucial (incluye el motor de inferencia ONNX). Con uv el spec vive en `pyproject.toml` y `uv sync` resuelve todo; `requirements.txt` queda como espejo para Docker.
 
 ---
 
