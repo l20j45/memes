@@ -363,9 +363,10 @@ function shapeCanvas(shape, artW) {
   // canvas de referencia (aspecto + serializacion por dataURL); el render
   // real en draw() es vector y no lo usa
   const size = Math.max(240, Math.round(Math.min(660, artW || 660)));
+  const aspect = { circle: 1, square: 1, ellipse: .7, rect: .7, tri: .75, arrow: .45, line: .3, bubble: .95 }[shape] ?? 1;
   const c = document.createElement('canvas');
   c.width = size;
-  c.height = Math.round(size * (shape === 'ellipse' || shape === 'rect' ? .7 : 1));
+  c.height = Math.round(size * aspect);
   return c;
 }
 
@@ -394,9 +395,51 @@ function addShape(shapeName) {
 }
 
 function shapePath(cx, m, x, y, w, h) {
+  // Línea: trazo puro de esquina a esquina (color = "Borde" del panel)
+  if (m.shape === 'line') {
+    cx.beginPath();
+    cx.moveTo(x, y + h);
+    cx.lineTo(x + w, y);
+    cx.lineCap = 'round';
+    cx.lineWidth = Math.max(1, (m.borderW ?? .03) * w);
+    cx.strokeStyle = m.strokeStyle || '#0b1220';
+    cx.stroke();
+    return;
+  }
+
   cx.beginPath();
   if (m.shape === 'circle' || m.shape === 'ellipse') {
     cx.ellipse(x + w / 2, y + h / 2, Math.max(1, w / 2), Math.max(1, h / 2), 0, 0, Math.PI * 2);
+  } else if (m.shape === 'tri') {
+    cx.moveTo(x + w / 2, y);
+    cx.lineTo(x + w, y + h);
+    cx.lineTo(x, y + h);
+    cx.closePath();
+  } else if (m.shape === 'arrow') {
+    // flecha horizontal apuntando a la derecha (cuerpo + punta)
+    const bw2 = Math.max(2, h * .18);
+    cx.moveTo(x, y + h / 2 - bw2);
+    cx.lineTo(x + w * .62, y + h / 2 - bw2);
+    cx.lineTo(x + w * .62, y);
+    cx.lineTo(x + w, y + h / 2);
+    cx.lineTo(x + w * .62, y + h);
+    cx.lineTo(x + w * .62, y + h / 2 + bw2);
+    cx.closePath();
+  } else if (m.shape === 'bubble') {
+    // bocadillo de dialogo: cuerpo redondeado + cola abajo-izquierda
+    const r = Math.min(w, h) * .14;
+    const bodyH = h * .64;
+    const tx = x + w * .22;              // ápice de la cola
+    const f1x = x + w * .10;             // pie izquierdo de la cola
+    const f2x = x + w * .38;             // pie derecho
+    cx.moveTo(x + r, y);
+    cx.arcTo(x + w, y, x + w, y + bodyH, r);            // top edge + esquina TR
+    cx.lineTo(f2x, y + bodyH);
+    cx.lineTo(tx, y + h);
+    cx.lineTo(f1x, y + bodyH);
+    cx.arcTo(x, y + bodyH, x, y, r);                    // esquina BL
+    cx.arcTo(x, y, x + w, y, r);                        // esquina TL
+    cx.closePath();
   } else {
     const r = Math.min(w, h) * (m.shape === 'square' ? 0 : .08);
     if (cx.roundRect) cx.roundRect(x, y, w, h, r);
@@ -2586,6 +2629,11 @@ function initEvents() {
   $('#addCirc').onclick = () => addShape('circle');
   $('#addEll').onclick = () => addShape('ellipse');
   $('#addRect').onclick = () => addShape('rect');
+  $('#addSquare').onclick = () => addShape('square');
+  $('#addTri').onclick = () => addShape('tri');
+  $('#addArrow').onclick = () => addShape('arrow');
+  $('#addLine').onclick = () => addShape('line');
+  $('#addBubble').onclick = () => addShape('bubble');
 
   const withShape = (fn) => {
     const m = state.imgs[state.isel];
