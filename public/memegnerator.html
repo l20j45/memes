@@ -39,7 +39,7 @@
   <div class="panel">
     <section class="accordion-item">
       <button class="accordion-head" type="button" aria-expanded="true">
-        <span>Imagen Base</span>
+        <span>🎨 Imagen y lienzo</span>
         <span class="chev">▾</span>
       </button>
       <div class="accordion-body">
@@ -121,61 +121,9 @@
         </div>
       </div>
     </section>
-
     <section class="accordion-item is-collapsed">
       <button class="accordion-head" type="button" aria-expanded="false">
-        <span>Memes y plantillas</span>
-        <span class="chev">▾</span>
-      </button>
-      <div class="accordion-body">
-        <label>Plantillas integradas</label>
-        <div class="row quick-cats" style="margin-bottom:8px">
-          <button class="btn sm" data-template-set="classic" type="button">Clásicos</button>
-          <button class="btn sm" data-template-set="viral" type="button">Virales</button>
-          <button class="btn sm" data-template-set="cinematic" type="button">Cine</button>
-        </div>
-        <label>Buscar memes</label>
-        <div class="row" style="margin-bottom:8px">
-          <input class="in" id="memeSearch" type="text" placeholder="Busca un meme...">
-          <button class="btn sm pri" id="searchViralBtn" type="button">Buscar</button>
-        </div>
-        <div class="row" style="margin-bottom:8px">
-          <button class="btn sm pri" id="viralBtn" type="button">Memes virales</button>
-          <button class="btn sm pri" id="redditBtn" type="button">Reddit</button>
-        </div>
-        <div class="row" style="margin-bottom:8px;display:none" id="apiBaseRow">
-          <input class="in" id="apiBase" type="text" placeholder="Servidor IA: http://IP-PC:5005" inputmode="url">
-          <button class="btn sm" id="apiBaseSave" type="button">Guardar</button>
-        </div>
-        <div class="row" style="margin-bottom:8px;display:none;width:100%" id="draftRow">
-          <button class="btn sm" id="draftUp" type="button" title="Guarda el meme COMPLETO (imagen + capas + ajustes) en el servidor para continuar en otro dispositivo">☁ Subir borrador</button>
-          <button class="btn sm" id="draftDown" type="button" title="Restaura el borrador guardado en el servidor">↧ Traer borrador</button>
-        </div>
-        <div class="tpl" id="tpl"></div>
-      </div>
-    </section>
-
-    <section class="accordion-item is-collapsed">
-      <button class="accordion-head" type="button" aria-expanded="false">
-        <span>Limpiar meme</span>
-        <span class="chev">▾</span>
-      </button>
-      <div class="accordion-body">
-        <label class="chk"><input type="checkbox" id="cleanOn"> Modo borrador: pintar sobre la imagen</label>
-        <label><span class="rl">Tamaño del pincel <b id="brushV"></b></span><input type="range" id="brush" min="5" max="120" value="35"></label>
-        <label class="chk"><input type="checkbox" id="onlyText" checked> Solo texto blanco/negro dentro del trazo</label>
-        <div class="row">
-          <button class="btn sm pri" id="cleanBtn" type="button">Borrar lo pintado</button>
-          <button class="btn sm" id="clearMask" type="button">Quitar trazo</button>
-        </div>
-        <button class="btn sm" id="cropBarsBtn" type="button">Quitar barra de texto (arriba/abajo)</button>
-        <p class="note">Pinta sin precisión sobre el texto y pulsa «Borrar lo pintado». Si el texto no es blanco o negro, desmarca la casilla y pinta ajustado. Cada limpieza se puede deshacer con Ctrl+Z.</p>
-      </div>
-    </section>
-
-    <section class="accordion-item is-collapsed">
-      <button class="accordion-head" type="button" aria-expanded="false">
-        <span>Texto y Estilo</span>
+        <span>🔤 Texto y estilo</span>
         <span class="chev">▾</span>
       </button>
       <div class="accordion-body">
@@ -224,10 +172,57 @@
         <label><span class="rl">Barra superior <b id="barV"></b></span><input type="range" id="bar" min="0" max="50"></label>
       </div>
     </section>
-
     <section class="accordion-item is-collapsed">
       <button class="accordion-head" type="button" aria-expanded="false">
-        <span>Marca de Agua y Exportación</span>
+        <span>🧹 Retocar</span>
+        <span class="chev">▾</span>
+      </button>
+      <div class="accordion-body">
+        <label class="chk"><input type="checkbox" id="cleanOn"> Modo borrador: pintar sobre la imagen</label>
+        <label><span class="rl">Tamaño del pincel <b id="brushV"></b></span><input type="range" id="brush" min="5" max="120" value="35"></label>
+        <label class="chk"><input type="checkbox" id="onlyText" checked> Solo texto blanco/negro dentro del trazo</label>
+        <div class="row">
+          <button class="btn sm pri" id="cleanBtn" type="button">Borrar lo pintado</button>
+          <button class="btn sm" id="clearMask" type="button">Quitar trazo</button>
+        </div>
+        <button class="btn sm" id="cropBarsBtn" type="button">Quitar barra de texto (arriba/abajo)</button>
+        <p class="note">Pinta sin precisión sobre el texto y pulsa «Borrar lo pintado». Si el texto no es blanco o negro, desmarca la casilla y pinta ajustado. Cada limpieza se puede deshacer con Ctrl+Z.</p>
+      </div>
+    </section>
+    <section class="accordion-item is-collapsed">
+      <button class="accordion-head" type="button" aria-expanded="false">
+        <span>🧭 Plantillas y memes</span>
+        <span class="chev">▾</span>
+      </button>
+      <div class="accordion-body">
+        <label>Plantillas integradas</label>
+        <div class="row quick-cats" style="margin-bottom:8px">
+          <button class="btn sm" data-template-set="classic" type="button">Clásicos</button>
+          <button class="btn sm" data-template-set="viral" type="button">Virales</button>
+          <button class="btn sm" data-template-set="cinematic" type="button">Cine</button>
+        </div>
+        <label>Buscar memes</label>
+        <div class="row" style="margin-bottom:8px">
+          <input class="in" id="memeSearch" type="text" placeholder="Busca un meme...">
+          <button class="btn sm pri" id="searchViralBtn" type="button">Buscar</button>
+        </div>
+        <div class="row" style="margin-bottom:8px">
+          <button class="btn sm pri" id="viralBtn" type="button">Memes virales</button>
+          <button class="btn sm pri" id="redditBtn" type="button">Reddit</button>
+        </div>
+        <div class="row" style="margin-bottom:8px;display:none" id="apiBaseRow">
+          <input class="in" id="apiBase" type="text" placeholder="Servidor IA: http://IP-PC:5005" inputmode="url">
+          <button class="btn sm" id="apiBaseSave" type="button">Guardar</button>
+        </div>
+        <div class="row" style="margin-bottom:8px;display:none;width:100%" id="draftRow">
+          <button class="btn sm" id="draftUp" type="button" title="Guarda el meme COMPLETO (imagen + capas + ajustes) en el servidor para continuar en otro dispositivo">☁ Subir borrador</button>
+          <button class="btn sm" id="draftDown" type="button" title="Restaura el borrador guardado en el servidor">↧ Traer borrador</button>
+        </div>
+        <div class="tpl" id="tpl"></div>
+      </div>
+    </section>
+    <section class="accordion-item is-collapsed">
+      <button class="accordion-head" type="button" aria-expanded="false"> <span>🏷 Marca de agua</span>
         <span class="chev">▾</span>
       </button>
       <div class="accordion-body">
@@ -271,6 +266,13 @@
         <label><span class="rl">Desenfoque <b id="wmBlurV">0px</b></span><input type="range" id="wmBlur" min="0" max="18" step="1" value="0"></label>
         <label><span class="rl">Sombra <b id="wmShadowBlurV">0px</b></span><input type="range" id="wmShadowBlur" min="0" max="30" step="1" value="0"></label>
 
+              </div>
+    </section>
+    <section class="accordion-item is-collapsed">
+      <button class="accordion-head" type="button" aria-expanded="false"> <span>⬇ Exportar</span>
+        <span class="chev">▾</span>
+      </button>
+      <div class="accordion-body">
         <label style="margin-top:8px">Formato de descarga
           <select class="in" id="fmt">
             <option value="image/png">PNG (máxima calidad)</option>

@@ -1,17 +1,17 @@
 # Graph Report - memes  (2026-11-03)
 
 ## Corpus Check
-- 70 files · ~58,180 words
+- 71 files · ~58,467 words
 - Verdict: corpus is large enough that graph structure adds value.
-- Unclassified: 42 file(s) not represented in the graph (top: .xml 8, .bin 7, .properties 6)
+- Unclassified: 43 file(s) not represented in the graph (top: .xml 8, .bin 7, .properties 6)
 
 ## Summary
-- 745 nodes · 1571 edges · 39 communities (22 shown, 17 thin omitted)
+- 746 nodes · 1571 edges · 40 communities (22 shown, 18 thin omitted)
 - Extraction: 99% EXTRACTED · 1% INFERRED · 0% AMBIGUOUS · INFERRED: 23 edges (avg confidence: 0.93)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `b2c4eaf2`
+- Built from commit: `2e68795a`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -38,6 +38,7 @@
 - graphify
 - bump_version.py
 - build_apk.sh
+- memestudio
 - users.py
 - android_bridge.test.mjs
 - auth.py
@@ -68,13 +69,13 @@
   AGENTS.md → tools/refresh_graph_docs.py
 - `📊 Graphify — Grafo de Conocimiento del Código (contexto primario)` --references--> `graph_stats()`  [INFERRED]
   AGENTS.md → tools/refresh_graph_docs.py
-- `🔍 Diagnóstico y Correcciones Recomendadas` --references--> `remove_bg()`  [INFERRED]
-  README.md → memestudio/app/routers/images.py
+- `Auth (`REQUIRE_LOGIN=1`): `POST /api/auth/register` · `/api/auth/login` · `/api/auth/logout` · `GET /api/auth/me`` --references--> `login()`  [INFERRED]
+  README.md → memestudio/app/routers/auth.py
 
 ## Import Cycles
 - None detected.
 
-## Communities (39 total, 17 thin omitted)
+## Communities (40 total, 18 thin omitted)
 
 ### Community 0 - "memes.py"
 Cohesion: 0.07
@@ -134,7 +135,7 @@ Nodes (11): background_color, description, display, icons, lang, name, orientati
 
 ### Community 19 - "run.sh"
 Cohesion: 0.60
-Nodes (5): ensure_venv(), health(), pick_python(), server_pids(), run.sh script
+Nodes (5): ensure_env(), health(), pick_python(), server_pids(), run.sh script
 
 ### Community 21 - "auth_support.py"
 Cohesion: 0.18
@@ -165,7 +166,9 @@ Cohesion: 0.08
 Nodes (13): CLI equivalente (útil para scripts), Conectarse al grafo por MCP (otros agentes y clientes), Configuración actual, 📊 Graphify — Grafo de Conocimiento del Código (contexto primario), Herramientas MCP (prefijo `graphify_`), Regla de uso para agentes, ArcticShiftRedditCatalog, _http_json() (+5 more)
 
 ## Knowledge Gaps
-- **17 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **1 isolated node(s):** `memestudio`
+  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 264 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
+- **18 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
@@ -174,6 +177,8 @@ _Questions this graph is uniquely positioned to answer:_
   _High betweenness centrality (0.067) - this node is a cross-community bridge._
 - **Are the 3 inferred relationships involving `create_app()` (e.g. with `InitializationError` and `.init_schema()`) actually correct?**
   _`create_app()` has 3 INFERRED edges - model-reasoned connections that need verification._
+- **What connects `memestudio` to the rest of the system?**
+  _1 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `memes.py` be split into smaller, more focused modules?**
   _Cohesion score 0.07123034227567067 - nodes in this community are weakly interconnected._
 - **Why does `build_image_router()` connect `extract_subject` to `images.py`, `auth_support.py`?**
@@ -182,5 +187,3 @@ _Questions this graph is uniquely positioned to answer:_
   _Cohesion score 0.05546218487394958 - nodes in this community are weakly interconnected._
 - **Should `extract_subject` be split into smaller, more focused modules?**
   _Cohesion score 0.09848484848484848 - nodes in this community are weakly interconnected._
-- **Should `assets/app.mjs` be split into smaller, more focused modules?**
-  _Cohesion score 0.053515783769136974 - nodes in this community are weakly interconnected._
