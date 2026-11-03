@@ -48,6 +48,22 @@
           <button class="btn" id="pasteBtn" type="button">Pegar</button>
           <button class="btn" id="resetBtn" type="button">Reiniciar</button>
         </div>
+        <div class="row" id="shapesRow">
+          <button class="btn sm" id="addCirc" type="button" title="Capa de figura: circulo">◯ Círculo</button>
+          <button class="btn sm" id="addEll" type="button" title="Capa de figura: elipse">⬭ Elipse</button>
+          <button class="btn sm" id="addRect" type="button" title="Capa de figura: rectángulo (cuadro de texto)">▢ Rectángulo</button>
+        </div>
+        <div id="shapeOpts" hidden style="margin-top:8px">
+          <div class="row">
+            <label>Forma
+              <select class="in" id="shapeType"><option value="circle">Círculo</option><option value="ellipse">Elipse</option><option value="rect">Rectángulo redondeado</option><option value="square">Cuadrado</option></select>
+            </label>
+            <label>Relleno<input type="color" id="shapeFill" value="#ffffff"></label>
+            <label>Borde<input type="color" id="shapeStroke" value="#0b1220"></label>
+          </div>
+          <label><span class="rl">Grosor del borde <b id="shapeStrokeWV">3%</b></span><input type="range" id="shapeStrokeW" min="0" max="20" step="1" value="3"></label>
+          <label class="hint" style="display:block;font-size:12px;color:var(--dim, #9aa3b8)">Las figuras son capas como las imágenes: arrastrables, con candado 🔒 y el texto va ENCIMA (úsalas como cuadros de calco). Fondo blanco y borde editables.</label>
+        </div>
         <div class="row" style="margin-top:8px">
           <button class="btn sm pri" id="removeBgBtn" type="button">Quitar fondo</button>
           <button class="btn sm" id="removeBgRealBtn" type="button">Quitar fondo real</button>
