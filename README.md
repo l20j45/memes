@@ -171,6 +171,20 @@ pip install -r requirements.txt
 
 ## 🖥️ Cómo Ejecutar el Proyecto
 
+### 0. `./run.sh` — un comando para todo (Linux/macOS)
+
+Script de la raíz que hace **todo el ciclo por ti**: crea el `.venv` si falta, instala `requirements.txt` si hace falta, y arranca el servidor entero (frontend + API de IA) en `http://localhost:5005`:
+
+```bash
+./run.sh          # en primer plano (Ctrl+C para parar)
+./run.sh -b       # en background (log en memesp.log, PID en ms_pid)
+./run.sh --check  # ¿está vivo el servidor?
+./run.sh -s       # pararlo
+./run.sh -k       # renace: mata lo que esté corriendo y arranca de nuevo
+```
+
+La configuración va en `.env` si existe (`REMBG_MODEL`, `REQUIRE_LOGIN`, `AUTH_USERS`, `PORT`… — modela el `.env.example`).
+
 ### 1. Docker (modo recomendado)
 
 **Toda la aplicación se ejecuta desde un contenedor Docker.** No necesita entorno virtual ni dependencias locales: solo Docker (o Docker Engine + el plugin de compose en Raspberry Pi).

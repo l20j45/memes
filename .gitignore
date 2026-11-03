@@ -39,5 +39,6 @@ graphify-out/.graphify_root
 graphify-out/.rebuild.lock
 graphify-out/cache/
 memesp.log
+ms_pid
 Thumbs.db
 venv/
