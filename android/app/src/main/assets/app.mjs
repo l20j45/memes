@@ -176,6 +176,7 @@ function buildSnapshot() {
       filter: m.filter,
       tpl: m.tpl,
       locked: !!m.locked,
+      ...shapeSerialize(m),
       src: m.c.toDataURL()
     }))
   });
@@ -262,7 +263,8 @@ async function loadState(idx) {
       sy: m.sy,
       filter: m.filter || 'none',
       tpl: m.tpl,
-      locked: !!m.locked
+      locked: !!m.locked,
+      ...shapeRestore(m)
     };
   }));
 
@@ -352,6 +354,80 @@ function checkerPattern(context) {
   return checkerCache;
 }
 
+// --- Figuras (capas de shape): circle/ellipse/rect/square ------------------
+// Son entradas de state.imgs con m.kind='shape' + params vectoriales, asi
+// REUTILIZAN todo (arrastrar, tiradores/sliders, candado, undo, borradores)
+// y se dibujan en el box de la capa sin perder nitidez al escalar (vector).
+// El texto de state.layers se dibuja DESPUES de las imagenes: queda ENCIMA.
+function shapeCanvas(shape, artW) {
+  // canvas de referencia (aspecto + serializacion por dataURL); el render
+  // real en draw() es vector y no lo usa
+  const size = Math.max(240, Math.round(Math.min(660, artW || 660)));
+  const c = document.createElement('canvas');
+  c.width = size;
+  c.height = Math.round(size * (shape === 'ellipse' || shape === 'rect' ? .7 : 1));
+  return c;
+}
+
+function addShape(shapeName) {
+  const m = {
+    c: shapeCanvas(shapeName, state.art.w),
+    x: .5,
+    y: .5,
+    w: .34,
+    sy: 1,
+    filter: 'none',
+    tpl: null,
+    kind: 'shape',
+    shape: shapeName,
+    fillStyle: '#ffffff',
+    strokeStyle: '#0b1220',
+    borderW: .03      // grosor del borde como fraccion del ancho de la capa
+  };
+  state.imgs.push(m);
+  state.isel = state.imgs.length - 1;
+  state.selK = 'img';
+  pushHistory();
+  sync();
+  schedule();
+  toast('Figura añadida (fondo blanco, borde editable). El texto queda encima.');
+}
+
+function shapePath(cx, m, x, y, w, h) {
+  cx.beginPath();
+  if (m.shape === 'circle' || m.shape === 'ellipse') {
+    cx.ellipse(x + w / 2, y + h / 2, Math.max(1, w / 2), Math.max(1, h / 2), 0, 0, Math.PI * 2);
+  } else {
+    const r = Math.min(w, h) * (m.shape === 'square' ? 0 : .08);
+    if (cx.roundRect) cx.roundRect(x, y, w, h, r);
+    else cx.rect(x, y, w, h);
+  }
+  cx.fillStyle = m.fillStyle || '#ffffff';
+  cx.fill();
+  const bw = (m.borderW ?? .03) * w;
+  if (bw > 0) {
+    cx.lineWidth = Math.max(1, bw);
+    cx.strokeStyle = m.strokeStyle || '#0b1220';
+    cx.stroke();
+  }
+}
+
+// Serializacion compartida: los extras de figura viajan junto a x/y/w/sy
+function shapeSerialize(m) {
+  if ((m.kind || 'img') !== 'shape') return {};
+  return { kind: 'shape', shape: m.shape, fillStyle: m.fillStyle, strokeStyle: m.strokeStyle, borderW: m.borderW };
+}
+
+function shapeRestore(m) {
+  return {
+    kind: m.kind || 'img',
+    shape: m.shape || 'circle',
+    fillStyle: m.fillStyle || '#ffffff',
+    strokeStyle: m.strokeStyle || '#0b1220',
+    borderW: m.borderW ?? .03
+  };
+}
+
 function draw(exp = false) {
   const { W, bh, H } = geom();
   if (cv.width !== W || cv.height !== H) {
@@ -386,6 +462,14 @@ function draw(exp = false) {
     const y = bh + m.y * state.art.h - h / 2;
     m.box = { x, y, w, h };
     cx.save();
+
+    // figuras: render VECTORIAL en el box (nitidez a cualquier tamano);
+    // ignoran filtros y mascara del borrador por diseño
+    if ((m.kind || 'img') === 'shape') {
+      shapePath(cx, m, x, y, w, h);
+      cx.restore();
+      return;
+    }
 
     if (m.filter === 'deepfry') {
       cx.filter = 'contrast(250%) saturate(300%) brightness(110%)';
@@ -816,6 +900,10 @@ function drawCropOverlay(W) {
 
 function startCropMode() {
   const m = state.imgs[state.isel];
+  if (m && m.kind === 'shape') {
+    toast('Las figuras se redimensionan con sus sliders: no hace falta recortarlas.', true);
+    return;
+  }
   if (!m) {
     toast('Sube una imagen para recortar.', true);
     return;
@@ -1107,6 +1195,15 @@ function syncImgs() {
   $('#ihV').textContent = h + '%';
   $('#filterSel').value = current.filter || 'none';
   $('#imgLock') && $('#imgLock').classList.toggle('active', !!current.locked);
+  const isShape = (current.kind || 'img') === 'shape';
+  $('#shapeOpts') && ($('#shapeOpts').hidden = !isShape);
+  if (isShape) {
+    $('#shapeType').value = current.shape || 'circle';
+    $('#shapeFill').value = current.fillStyle || '#ffffff';
+    $('#shapeStroke').value = current.strokeStyle || '#0b1220';
+    $('#shapeStrokeW').value = Math.round((current.borderW ?? .03) * 100);
+    $('#shapeStrokeWV').textContent = Math.round((current.borderW ?? .03) * 100) + '%';
+  }
   syncCropUI();
 }
 
@@ -1406,6 +1503,7 @@ function useTemplate(c) {
 
 function stroke(p, first) {
   const image = state.imgs[state.isel];
+  if (image && image.kind === 'shape') return;   // no pintar sobre figuras
   const box = image && image.box;
   const canvas = image && image.c;
   if (!image || !box || !canvas) return;
@@ -1442,6 +1540,7 @@ let bgRealBusy = false;
 async function removeBackgroundReal() {
   const image = state.imgs[state.isel];
   if (!image) return toast('Selecciona una imagen primero.', true);
+  if (image.kind === 'shape') return toast('Las figuras ya tienen su color de relleno — no necesitan IA de fondo.', true);
 
   if (bgRealBusy) {
     return toast('Ya hay un proceso de fondo real en marcha. Espera a que termine.', true);
@@ -1559,6 +1658,7 @@ async function removeBackgroundReal() {
 function removeBackground() {
   const image = state.imgs[state.isel];
   if (!image) return toast('Selecciona una imagen primero.', true);
+  if (image.kind === 'shape') return toast('Las figuras ya tienen su color de relleno — no hacen falta quitar fondo.', true);
 
   const canvas = image.c;
   const ctx = canvas.getContext('2d', { willReadFrequently: true });
@@ -1788,6 +1888,7 @@ function remoteDraftPayload() {
       filter: m.filter,
       tpl: m.tpl,
       locked: !!m.locked,
+      ...shapeSerialize(m),
       src: m.c.toDataURL()
     }))
   };
@@ -1814,7 +1915,8 @@ async function restoreRemoteDraft(data) {
       sy: m.sy ?? 1,
       filter: m.filter || 'none',
       tpl: m.tpl,
-      locked: !!m.locked
+      locked: !!m.locked,
+      ...shapeRestore(m)
     };
   }))).filter(Boolean);
 
@@ -2480,6 +2582,30 @@ function initEvents() {
     schedule();
   };
 
+  // --- Figuras: añadir capas de shape y editar sus parametros -------------
+  $('#addCirc').onclick = () => addShape('circle');
+  $('#addEll').onclick = () => addShape('ellipse');
+  $('#addRect').onclick = () => addShape('rect');
+
+  const withShape = (fn) => {
+    const m = state.imgs[state.isel];
+    if (!m || (m.kind || 'img') !== 'shape') return;
+    fn(m);
+    pushHistory();
+    sync();
+    schedule();
+  };
+  $('#shapeType').addEventListener('change', (event) => withShape((m) => { m.shape = event.target.value; }));
+  $('#shapeFill').addEventListener('input', (event) => withShape((m) => { m.fillStyle = event.target.value; }));
+  $('#shapeStroke').addEventListener('input', (event) => withShape((m) => { m.strokeStyle = event.target.value; }));
+  $('#shapeStrokeW').addEventListener('input', (event) => {
+    const m = state.imgs[state.isel];
+    if (!m || (m.kind || 'img') !== 'shape') return;
+    m.borderW = Number(event.target.value) / 100;
+    $('#shapeStrokeWV').textContent = event.target.value + '%';
+    schedule();
+  });
+
   $('#imgLock').onclick = () => {
     const image = state.imgs[state.isel];
     if (!image) return;
@@ -2501,6 +2627,10 @@ function initEvents() {
   $('#filterSel').addEventListener('change', (event) => {
     const image = state.imgs[state.isel];
     if (!image) return;
+    if (image.kind === 'shape') {
+      $('#filterSel').value = 'none';
+      return toast('Las figuras no llevan filtros (cambian relleno/borde en el panel de figura).', true);
+    }
     image.filter = event.target.value;
     pushHistory();
     schedule();
