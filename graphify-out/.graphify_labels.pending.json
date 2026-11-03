@@ -29,6 +29,7 @@
   "27": "routers/__init__.py",
   "28": "domain/__init__.py",
   "29": "memestudio/__init__.py",
+  "30": "memestudio",
   "31": "users.py",
   "32": "android_bridge.test.mjs",
   "33": "auth.py",
