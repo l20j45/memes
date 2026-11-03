@@ -8,6 +8,11 @@
 #   ./run.sh -k           # matar cualquier servidor en marcha y arrancar de nuevo
 #   ./run.sh --check      # solo comprobar el /health del servidor activo
 #
+# Si tienes uv instalado, la instalacion de deps usa `uv pip install
+# --python .venv/bin/python -r requirements.txt` (resolucion rapidisima
+# apuntando el MISMO .venv). Para correr a mano via uv:
+#   uv run --no-project --python .venv/bin/python server.py
+#
 # Lee el .env de la raiz si existe (REMBG_MODEL, REQUIRE_LOGIN, AUTH_USERS,
 # PORT/HOST_PORT...) como `python server.py`; PORT cambia el puerto.
 set -euo pipefail
@@ -29,10 +34,17 @@ ensure_venv() {
     echo "==> No hay .venv: creando entorno virtual..."
     "$PY" -m venv .venv
   fi
+  # deps: con uv (resolucion ultrarrapida, apuntando al .venv con --python)
+  # o pip clasico como fallback
   if ! .venv/bin/python -c 'import fastapi, uvicorn, rembg' >/dev/null 2>&1; then
-    echo "==> Instalando dependencias (rembg[cpu], fastapi...) ..."
-    .venv/bin/python -m pip install --quiet --upgrade pip
-    .venv/bin/python -m pip install --quiet -r requirements.txt
+    if command -v uv >/dev/null 2>&1; then
+      echo "==> Instalando dependencias con uv (rapido)..."
+      uv pip install --quiet --python .venv/bin/python -r requirements.txt
+    else
+      echo "==> Instalando dependencias con pip..."
+      .venv/bin/python -m pip install --quiet --upgrade pip
+      .venv/bin/python -m pip install --quiet -r requirements.txt
+    fi
   fi
 }
 

@@ -18,15 +18,15 @@
     "semantic_hash": ""
   },
   "AGENTS.md": {
-    "mtime": 1793727654.3002477,
-    "seen": 1793727703.502048,
-    "ast_hash": "189d7deb52613a5bf7d3da133185523f",
+    "mtime": 1793728308.2567954,
+    "seen": 1793728315.628017,
+    "ast_hash": "967fd2a0ba7b91c6de5924f55d57925b",
     "semantic_hash": ""
   },
   "README.md": {
-    "mtime": 1793727702.2719722,
-    "seen": 1793727703.502049,
-    "ast_hash": "e390ecb264a93df3d8a60a483ce186dd",
+    "mtime": 1793728308.2619739,
+    "seen": 1793728315.628017,
+    "ast_hash": "97f00ebef77a8f54f76d5a1d13fadbc9",
     "semantic_hash": ""
   },
   "requirements.txt": {
@@ -513,6 +513,12 @@
     "mtime": 1793727691.448434,
     "seen": 1793727703.502051,
     "ast_hash": "233911cdd1695745dc2e64aebdd48d27",
+    "semantic_hash": ""
+  },
+  "run.sh": {
+    "mtime": 1793728275.948722,
+    "seen": 1793728315.6280088,
+    "ast_hash": "7465769906d0b2134ca5899759bbc2b0",
     "semantic_hash": ""
   }
 }
