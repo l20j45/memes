@@ -1,9 +1,9 @@
 # Graph Report - memes  (2026-11-03)
 
 ## Corpus Check
-- 71 files · ~58,467 words
+- 71 files · ~58,511 words
 - Verdict: corpus is large enough that graph structure adds value.
-- Unclassified: 43 file(s) not represented in the graph (top: .xml 8, .bin 7, .properties 6)
+- Unclassified: 45 file(s) not represented in the graph (top: .xml 8, .bin 7, .properties 6)
 
 ## Summary
 - 746 nodes · 1571 edges · 40 communities (22 shown, 18 thin omitted)
@@ -11,7 +11,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `2e68795a`
+- Built from commit: `b05acd1a`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -63,12 +63,12 @@
 ## Surprising Connections (you probably didn't know these)
 - `Conectar un agente al grafo (resumen)` --references--> `graph_stats()`  [INFERRED]
   README.md → tools/refresh_graph_docs.py
-- `Herramientas MCP (prefijo `graphify_`)` --references--> `graph_stats()`  [INFERRED]
-  AGENTS.md → tools/refresh_graph_docs.py
 - `Conectarse al grafo por MCP (otros agentes y clientes)` --references--> `graph_stats()`  [INFERRED]
   AGENTS.md → tools/refresh_graph_docs.py
-- `📊 Graphify — Grafo de Conocimiento del Código (contexto primario)` --references--> `graph_stats()`  [INFERRED]
+- `Herramientas MCP (prefijo `graphify_`)` --references--> `graph_stats()`  [INFERRED]
   AGENTS.md → tools/refresh_graph_docs.py
+- `🔍 Diagnóstico y Correcciones Recomendadas` --references--> `remove_bg()`  [INFERRED]
+  README.md → memestudio/app/routers/images.py
 - `Auth (`REQUIRE_LOGIN=1`): `POST /api/auth/register` · `/api/auth/login` · `/api/auth/logout` · `GET /api/auth/me`` --references--> `login()`  [INFERRED]
   README.md → memestudio/app/routers/auth.py
 
