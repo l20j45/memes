@@ -30,7 +30,7 @@ def _banner() -> None:
     elif settings.require_login:
         access = "REQUIRE_LOGIN activo pero la BD fallo; cae a abierto"
     else:
-        access = "abierto (config REQUIRE_LOGIN=1 para login con registro)"
+        access = "abierto (REQUIRE_LOGIN=0 para desactivar; por defecto pide login)"
     print("\n==========================================")
     print("  Meme Studio Pro iniciando...")
     print(f"  Modelo rembg: {settings.rembg_model}")
