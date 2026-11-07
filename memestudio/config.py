@@ -81,8 +81,9 @@ class Settings:
     # prioridad sobre el login con cuentas para no romper despliegues legados.
     auth_users: dict = field(default_factory=dict)
 
-    # Login con cuentas (registro en la UI; ver .env.example relacionadas)
-    require_login: bool = False
+    # Login con cuentas (registro en la UI; ver .env.example relacionadas).
+    # Por defecto ACTIVADO: la app pide sesion salvo REQUIRE_LOGIN=0 explícito.
+    require_login: bool = True
     registration_open: bool = True
     session_days: int = 30
     auth_db_path: Path = field(default_factory=lambda: Path("data") / "memestudio.db")
@@ -103,6 +104,9 @@ def load_settings() -> Settings:
 
     model = os.environ.get("REMBG_MODEL") or ("u2netp" if is_arm else "u2net")
     cors = [o.strip() for o in os.environ.get("CORS_ORIGINS", "*").split(",") if o.strip()] or ["*"]
+    # Login con cuentas por defecto: vacio / no definido / 1 lo exige;
+    # solo "0"/"false"/"no" deja la app abierta (LAN local).
+    raw_require = os.environ.get("REQUIRE_LOGIN", "").strip().lower()
 
     return Settings(
         root=root,
@@ -119,7 +123,7 @@ def load_settings() -> Settings:
         draft_dir=Path(os.environ.get("DRAFT_DIR") or (root / "drafts")),
         draft_max_mb=int(os.environ.get("DRAFT_MAX_MB", "25")),
         auth_users=_parse_auth_users(os.environ.get("AUTH_USERS", "")),
-        require_login=_truthy(os.environ.get("REQUIRE_LOGIN")),
+        require_login=raw_require not in ("0", "false", "no"),
         registration_open=os.environ.get("REGISTRATION_OPEN", "1").lower() not in ("0", "false", "no"),
         session_days=int(os.environ.get("SESSION_DAYS", "30")),
         auth_db_path=Path(os.environ.get("AUTH_DB") or (root / "data" / "memestudio.db")),

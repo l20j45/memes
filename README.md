@@ -387,12 +387,12 @@ AUTH_USERS=daniel:mipass,novia:supass
 
 ---
 
-## 👤 Login con cuentas (registro público; recomendado para despliegues públicos)
+## 👤 Login con cuentas (registro público; ACTIVADO POR DEFECTO)
 
-Si vas a abrir el servidor a gente de fuera (proyecto público), puedes usar **cuentas reales con registro** en lugar de Basic Auth: en el `.env` define
+**Por defecto la app pide iniciar sesión con cuentas** (`REQUIRE_LOGIN=1`): quien entre verá el panel "Iniciar sesión / Crear cuenta" y no podrá usar la API sin sesión. Para un uso local/LAN sin contraseñas, define en el `.env`:
 
 ```
-REQUIRE_LOGIN=1
+REQUIRE_LOGIN=0
 ```
 
 - **Registro desde la propia interfaz**: al entrar aparece el panel "Iniciar sesión / Crear cuenta"; el usuario se registra él mismo (nombre + contraseña de 8+ caracteres) y su sesión queda guardada en una cookie `HttpOnly` de 30 días (`SESSION_DAYS`).
@@ -401,7 +401,7 @@ REQUIRE_LOGIN=1
 - **Protecciones incluidas**: rate-limit en memoria (5 registros/5 min por IP, 10 logins/5 min por IP), rechazo de orígenes cruzados en los POST con cookie (mitigación CSRF, junto a `SameSite=Lax`), usuario único case-insensitive y nombre validado (3-24 caracteres).
 - **Opcional**: `REGISTRATION_OPEN=0` cierra el registro (solo entran cuentas ya creadas) y `PUBLIC_HTTPS=1` si el servidor vive detrás de HTTPS (Cloudflare Tunnel, proxy inverso) para marcar la cookie como `Secure`.
 - Los borradores de `/api/draft` se guardan por cuenta igual que con Basic Auth (`drafts/<usuario>.json`).
-- Prioridad de modos: `AUTH_USERS` (Basic) > `REQUIRE_LOGIN=1` (cuentas) > abierto (LAN, por defecto).
+- Prioridad de modos: `AUTH_USERS` (Basic) > `REQUIRE_LOGIN=1` (cuentas; **activo por defecto**) > abierto (solo con `REQUIRE_LOGIN=0`).
 
 ---
 
@@ -462,7 +462,7 @@ Cuentas reales con cookie de sesión `HttpOnly/SameSite=Lax` (`Secure` con `PUBL
 - **`login`** `{username, password}` — abre sesión (hash scrypt).
 - **`logout`** — cierra la sesión.
 - **`me`** — `{"user", "auth_required", "registration_open"}`; el front lo consulta al arrancar y ante un `401` de cualquier llamado a `/api/*` reabre el modal de login.
-Prioridad: `AUTH_USERS` (Basic) > `REQUIRE_LOGIN=1` (cuentas) > abierto.
+Prioridad: `AUTH_USERS` (Basic) > `REQUIRE_LOGIN=1` (cuentas; activo por defecto) > abierto (`REQUIRE_LOGIN=0`).
 
 ### `POST /api/draft` / `GET /api/draft`
 Sincronización de borradores entre dispositivos (móvil ↔ PC). Cada usuario guarda **su** borrador completo (JSON con imagen en dataURL, capas, posiciones, filtros y ajustes) en `drafts/<usuario>.json`; el usuario lo identifica la sesión de su cuenta (`REQUIRE_LOGIN=1`), la Basic Auth (`AUTH_USERS`), o es `local` si el servidor corre sin contraseña.
