@@ -14,7 +14,7 @@ services:
     restart: unless-stopped
     ports:
       # HOST_PORT (host) -> 5005 (fijo dentro del contenedor, ver .env.example)
-      - "${HOST_PORT:-5005}:5005"
+      - "${HOST_PORT:-5006}:5005"
     environment:
       # Configuración (todo documentado en .env.example)
       - REMBG_MODEL=${REMBG_MODEL:-}
