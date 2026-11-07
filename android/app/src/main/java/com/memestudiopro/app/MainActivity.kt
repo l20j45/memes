@@ -24,16 +24,31 @@ import java.io.File
 /**
  * Meme Studio Pro — WebView wrapper del editor (memegnerator.html + app.mjs).
  *
- * El frontend viaja como assets locales; el backend Python (rembg) NO corre en
- * el movil: la app lo detecta via window.AndroidSaver y, si el usuario
- * configura "Servidor IA" en la UI, usa ese http://IP:5005 de su red local.
+ * La WebView carga la app alojada en HOME_URL (https://memes.l20j45.us/), de
+ * modo que el login con cuentas del backend (activo por defecto) funcione con
+ * cookies same-origin igual que en Chrome. El puente window.AndroidSaver esta
+ * inyectado en TODA pagina cargada en esta WebView, incluida la remota:
+ * guardar en galeria, copiar y pegar siguen siendo nativos.
+ *
+ * Si no hay red al arrancar (o cae al cargar la home), cae a los assets
+ * locales (file:///android_asset/), que ofrecen el editor basico sin IA ni
+ * borradores remotos.
  */
 class MainActivity : AppCompatActivity() {
 
     private lateinit var webView: WebView
     private var uploadCallback: ValueCallback<Array<Uri>>? = null
 
-    companion object { private const val RC_FILE_CHOOSER = 1001 }
+    companion object {
+        private const val RC_FILE_CHOOSER = 1001
+        // App alojada (PWA del servidor): misma base de codigo que la web y el
+        // login con cuentas funciona por cookies same-origin. Cambiar aqui todo.
+        private const val HOME_URL = "https://memes.l20j45.us/"
+        // Reserva offline: editor basico empaquetado como assets.
+        private const val ASSETS_HOME = "file:///android_asset/memegnerator.html"
+    }
+
+    private var usedAssetsFallback = false
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -53,7 +68,22 @@ class MainActivity : AppCompatActivity() {
             loadWithOverviewMode = true
         }
         webView.setBackgroundColor(0xFF0B1020.toInt())
-        webView.webViewClient = WebViewClient()
+        webView.webViewClient = object : WebViewClient() {
+            override fun onReceivedError(
+                view: WebView,
+                request: android.webkit.WebResourceRequest,
+                error: android.webkit.WebResourceError
+            ) {
+                // Solo si el fallo es del frame principal (un subrecurso roto,
+                // p.ej. una miniatura de Imgflip, no debe cambiar de pagina) y
+                // aun no hemos caido a los assets: sin red al arrancar abrimos
+                // el editor local basico para no quedar en pantalla en blanco.
+                if (request.isForMainFrame && !usedAssetsFallback) {
+                    usedAssetsFallback = true
+                    view.loadUrl(ASSETS_HOME)
+                }
+            }
+        }
         // imprescindible: sin WebChromeClient.onShowFileChooser el WebView
         // IGNORA los <input type="file"> y los botones "Subir imagen" y el
         // logo de la marca de agua quedan muertos (bug reportado).

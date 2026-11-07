@@ -1,8 +1,8 @@
 {
   "server.py": {
-    "mtime": 1793640885.9050956,
-    "seen": 1793642089.6945438,
-    "ast_hash": "7b5872c671b00a695269117f05ae21bc",
+    "mtime": 1794016850.993373,
+    "seen": 1794016933.320847,
+    "ast_hash": "6994ae03764a221fe90317cd8820fe51",
     "semantic_hash": ""
   },
   "tools/remove_bg.py": {
@@ -18,15 +18,15 @@
     "semantic_hash": ""
   },
   "AGENTS.md": {
-    "mtime": 1793729448.7223313,
-    "seen": 1793927780.608078,
-    "ast_hash": "aa9d1397ef9a922505b64ce1ed77b49d",
+    "mtime": 1794016929.5862396,
+    "seen": 1794016933.320854,
+    "ast_hash": "e325160486d83b0aca59b6ce4716ed76",
     "semantic_hash": ""
   },
   "README.md": {
-    "mtime": 1793729014.5267005,
-    "seen": 1793729022.525898,
-    "ast_hash": "79121ffddf884a96ced3cb4cc8c9ad92",
+    "mtime": 1794016859.300778,
+    "seen": 1794016933.3208551,
+    "ast_hash": "8e08583c732fab390a9f03b50826e8c6",
     "semantic_hash": ""
   },
   "requirements.txt": {
@@ -36,9 +36,9 @@
     "semantic_hash": ""
   },
   "docker-compose.yml": {
-    "mtime": 1793656236.6304822,
-    "seen": 1793656256.139664,
-    "ast_hash": "f5a674b63b7a5644f3bf1ef66251c518",
+    "mtime": 1794016846.5848062,
+    "seen": 1794016933.320828,
+    "ast_hash": "752426bbcf7a1b8055e4adc8950c7cad",
     "semantic_hash": ""
   },
   "tools/refresh_graph_docs.py": {
@@ -276,9 +276,9 @@
     "semantic_hash": ""
   },
   "memestudio/config.py": {
-    "mtime": 1793641855.363747,
-    "seen": 1793642089.694535,
-    "ast_hash": "46c7094ec9f52c37c73b7f23c81c7dd0",
+    "mtime": 1794016879.2501504,
+    "seen": 1794016933.320837,
+    "ast_hash": "03dae43ddff3f1ce3c2f02c031c07e6c",
     "semantic_hash": ""
   },
   "memestudio/domain/__init__.py": {

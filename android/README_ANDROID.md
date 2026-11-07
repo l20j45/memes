@@ -88,25 +88,25 @@ En la Play Console: Crear app → **Production/Testing → Create release → Up
 
 ## Qué funciona y qué no dentro del móvil
 
+La APK es un **shell de la app alojada** (`https://memes.l20j45.us/` en `MainActivity.kt:HOME_URL`): la WebView carga la web del servidor, y el puente `window.AndroidSaver` está inyectado en toda página cargada (incluida la remota), así que el guardado en galería y el clipboard siguen siendo nativos.
+
 | Función | ¿En Android? |
 | :--- | :--- |
 | Editor completo (textos, fuentes, capas, transformaciones, undo/redo, borrador) | ✅ idéntico al web |
 | Plantillas locales, meme clásico/cine | ✅ |
 | Exportar PNG/JPG/WebP | ✅ se guarda en **Galería → Pictures/MemeStudioPro** vía bridge nativo (`window.AndroidSaver`) |
-| Memes virales (Imgflip) | ✅ vía API directa (el proxy del backend no existe en el móvil) |
-| Búsqueda Reddit | ❌ requiere backend (Arctic Shift) |
-| "Quitar fondo real" (rembg/U2-Net) | ❌ en el móvil, **a menos que** configures "Servidor IA" (ver abajo) |
+| Login con cuentas / borradores remotos / Reddit / quitar fondo | ✅ contra el servidor (mismo origen que la web; el login funciona igual que en Chrome) |
+| Configurar otro "Servidor IA" | ✅ campo "Servidor IA" (`localStorage.apiBase`) si se quiere apuntar a otro backend |
+| Sin conexión al arrancar | ⚠️ cae a los **assets locales** (editor básico: sin IA, sin backend, sin login) |
 
-## Servidor IA opcional (quitar fondo real en Android)
+## Por qué carga la web y no los assets locales
 
-`/api/remove-bg` corre con Python + rembg, que no existe en Android. Dos formas de conservar la función:
+El backend exige **login con cuentas por defecto** (`REQUIRE_LOGIN=1`), y las sesiones son cookies `SameSite=Lax`: desde el editor local `file://` las cookies travesadas a un backend remoto NO viajan de forma fiable. Cargar la app alojada en el WebView deja todo en el mismo origen, y el login funciona como en el navegador. Los assets locales solo son la reserva offline (editor sin funciones de servidor).
 
-1. **Servidor en tu LAN (recomendado):** deja `python server.py` corriendo en tu PC y en la app Android abre el acordeón de plantillas → campo **"Servidor IA: http://IP-PC:5005"** → Guardar. El backend ya permite CORS (`allow_origins=["*"]`) y HTTP en claro desde Android via `network_security_config`.
-2. Sin servidor: usa el borrador manual (gomma), como siempre.
+## Sin conexión / usar otro servidor
 
-También disponible desde aquí: los botones **"☁ Subir borrador" / "↧ Traer borrador"** (aparecen con "Servidor IA" configurado) — sincronizan tu meme (imagen, capas, ajustes) con el PC vía `POST/GET /api/draft`.
-
-> **Si el servidor usa contraseñas (`AUTH_USERS` en `.env`):** la WebView del APK no muestra el diálogo de login del navegador, así que el APK no podrá autenticarse. En ese caso usa la **PWA** (abre `http://IP-PC:5005` o `https://tu-tunnel/` en Chrome móvil → "Instalar app"), que sí soporta Basic Auth nativo, o deja `AUTH_USERS` vacío.
+- Si `https://memes.l20j45.us/` no responde al arrancar, la WebView abre automáticamente `file:///android_asset/memegnerator.html` (editor básico). Los assets siguen siendo la copia de `public/` re-sincronizable (ver abajo).
+- Para apuntar la APK a otro dominio/editar el shell: cambia `HOME_URL` en `android/app/src/main/java/com/memestudiopro/app/MainActivity.kt` y recompila.
 
 ## Actualizar el frontend de la app
 
