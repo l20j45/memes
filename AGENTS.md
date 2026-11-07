@@ -88,10 +88,10 @@ El estado de la aplicación reside en el objeto singleton `state`:
 6. **KIndex limita su alcance al repositorio local:**
    - El binario de KIndex restringe el alcance al repositorio local que se escanea (Security Error ante cualquier path externo). Todas sus operaciones (`scan`, `query`, `deps`, etc.) se ejecutan sobre ese repositorio y fallarán con error si se le pide otro. En un clon en otra plataforma (Linux/ARM) este binario de Windows no correrá: borrar `.kindex/` y desinstalar sus hooks.
 
-7. **Android (`android/`): una sola base de código web, backend ausente en el móvil:**
-   - El APK es un WebView con el frontend web como assets; NO es un port a React Native/Flutter y **no debe duplicarse la lógica**: el mismo `app.mjs` detecta `window.AndroidSaver` (`NATIVE_ANDROID`) y usa `HAS_BACKEND`/`apiUrl()` para decidir dónde llamar a la API.
-   - En Android el backend de rembg no existe: "Quitar fondo real" exige configurar "Servidor IA" (http://IP-PC:5005 del PC en la misma red, guardado en `localStorage.apiBase`); la búsqueda Imgflip va por la API directa (fallback ya existente) y Reddit no está disponible sin backend.
-   - Los assets son una copia: tras cambios web hay que re-copiar con el comando de la tabla de archivos y re-subir el cache-busting `?v=N`; compila con Android Studio (ver `android/README_ANDROID.md`).
+7. **Android (`android/`): shell de la app alojada + editor local de reserva:**
+   - El APK carga `HOME_URL` (`https://memes.l20j45.us/`) en la WebView — mismo origen que la web, así que el login con cuentas (activo por defecto) funciona con cookies same-origin. El puente `window.AndroidSaver` está inyectado en cualquier página cargada (guardar en galería, copiar y pegar siguen nativos).
+   - Si no hay red al arrancar, cae automáticamente a los assets locales (`file:///android_asset/`, editor básico sin IA/login). Los assets siguen siendo la copia re-sincronizable de `public/`: tras cambios web re-copiar con el comando de la tabla de archivos y re-subir el `?v=N`.
+   - Cambiar de dominio del shell: editar `HOME_URL` en `MainActivity.kt` y recompilar (ver `android/README_ANDROID.md`).
 
 8. **Login con cuentas (REQUIRE_LOGIN), Basic Auth (`AUTH_USERS`) y borradores remotos (`/api/draft`):**
    - Prioridad de modos: `AUTH_USERS` (Basic Auth, privado) > `REQUIRE_LOGIN=1` (cuentas con registro en SQLite `data/memestudio.db`) > abierto. **El default es login con cuentas ACTIVADO** (vacio/1 en REQUIRE_LOGIN); la app abierta exige `REQUIRE_LOGIN=0` explícito (uso LAN sin contraseñas).
@@ -173,7 +173,7 @@ El parser de esta versión **no extrae símbolos de archivos `.py` ni `.mjs`** (
 Graphify (v0.9.100) construye y mantiene el grafo de conocimiento **real** del proyecto con tree-sitter AST (sí compiló `server.py`, `app.mjs`, `tools/remove_bg.py`; respeta `.gitignore`, así que `.venv/` y `.kindex/` están excluidos). Almacena el grafo en modo local/offline; el código se parsea sin LLM.
 
 <!-- graphify-stats:start -->
-> Grafo actualizado automáticamente por Git hooks (tools/refresh_graph_docs.py): **746 nodos · 1571 aristas · 40 comunidades** · commit de extracción `b05acd1a4`. Detalles vivos: `graphify-out/GRAPH_REPORT.md` y `graph_stats` (MCP).
+> Grafo actualizado automáticamente por Git hooks (tools/refresh_graph_docs.py): **746 nodos · 1571 aristas · 40 comunidades** · commit de extracción `f5dd93780`. Detalles vivos: `graphify-out/GRAPH_REPORT.md` y `graph_stats` (MCP).
 <!-- graphify-stats:end -->
 
 ### Configuración actual
