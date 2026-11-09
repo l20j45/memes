@@ -2816,6 +2816,11 @@ function initEvents() {
   });
 
   $('#bg').addEventListener('input', () => {
+    // Elegir un color expresa la intencion de USARLO: con "Fondo transparente"
+    // activo (default) el color no se pintaba en ninguna parte y parecia que
+    // los colores de fondo no funcionan (bug reportado en la APK). Lo
+    // desmarcamos al vuelo para que el color se vea de inmediato.
+    if ($('#bgTransparent').checked) $('#bgTransparent').checked = false;
     schedule();
     saveLocal();
   });
