@@ -32,9 +32,12 @@ test('MainActivity implementa onShowFileChooser (file inputs dejan de funcionar 
   }
 });
 
-test('la APK carga memegnerator.html (archivo canonico del front)', () => {
-  if (!/loadUrl\("file:\/\/\/android_asset\/memegnerator\.html"\)/.test(kt)) {
-    throw new Error('loadUrl ya no apunta a memegnerator.html: renombraste el front o el wrapper');
+test('la APK carga la shell remota HOME_URL y cae a memegnerator.html local', () => {
+  if (!/webView\.loadUrl\(HOME_URL\)/.test(kt)) {
+    throw new Error('MainActivity no carga HOME_URL: la APK ya no es shell de la PWA (sin login ni actualizaciones de front)');
+  }
+  if (!/file:\/\/\/android_asset\/memegnerator\.html/.test(kt)) {
+    throw new Error('ASSETS_HOME ya no apunta a memegnerator.html: renombraste el front o el wrapper');
   }
 });
 

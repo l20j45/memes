@@ -19,6 +19,9 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.FileProvider
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
 import java.io.File
 
 /**
@@ -68,6 +71,22 @@ class MainActivity : AppCompatActivity() {
             loadWithOverviewMode = true
         }
         webView.setBackgroundColor(0xFF0B1020.toInt())
+        // targetSdk 35: Android 15+ FUERZA edge-to-edge y la WebView se pintaba
+        // DETRAS de la barra de estado y de navegacion (bug reportado: el
+        // lienzo salia desfazado y tapado por el reloj/botoneria del sistema).
+        // Edge-to-edge explicito en todas las versiones + insets aplicados como
+        // padding para que el contenido quede dentro del area segura (incluye
+        // el recorte del IME: con adjustResize solo, el teclado tapaba).
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+        ViewCompat.setOnApplyWindowInsetsListener(webView) { view, insets ->
+            val safe = insets.getInsets(
+                WindowInsetsCompat.Type.systemBars()
+                    or WindowInsetsCompat.Type.displayCutout()
+                    or WindowInsetsCompat.Type.ime()
+            )
+            view.setPadding(safe.left, safe.top, safe.right, safe.bottom)
+            WindowInsetsCompat.CONSUMED
+        }
         webView.webViewClient = object : WebViewClient() {
             override fun onReceivedError(
                 view: WebView,
@@ -115,7 +134,12 @@ class MainActivity : AppCompatActivity() {
             }
         }
         webView.addJavascriptInterface(ImageSaverBridge(this), "AndroidSaver")
-        webView.loadUrl("file:///android_asset/memegnerator.html")
+        // Shell remota (PWA del servidor: el front se actualiza sin publicar APK
+        // y el login con cuentas funciona por cookies same-origin). Sin red al
+        // arrancar, onReceivedError de arriba cae a los assets locales.
+        // (Antes cargaba los assets SIEMPRE: la 1.4 se distribuyo como shell
+        // remota pero el codigo nunca visitaba HOME_URL.)
+        webView.loadUrl(HOME_URL)
 
         setContentView(webView)
     }
