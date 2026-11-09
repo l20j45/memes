@@ -1,44 +1,74 @@
-
-
-
-
-
-
-
-
-
-__pycache__/
+# ============================================
+# Sistema operativo y editores
+# ============================================
 .DS_Store
-.env
+Thumbs.db
+*.swp
 .idea/
-.kindex/
-.venv/
 .vscode/
-*.log
+
+# ============================================
+# Python
+# ============================================
+__pycache__/
 *.py[cod]
 *.pyc
-*.swp
 *$py.class
-# Archivos de sistema operativo y editores
-# Base de datos de cuentas y sesiones del login (data/, AUTH_DB por defecto)
-# Borradores remotos guardados por los usuarios (/api/draft)
-# Byte-compiled / cachés de Python
-# Configuración local (usar .env.example como plantilla)
-# Entornos virtuales de Python
-# Graphify: cachés de extracción (graph.json y GRAPH_REPORT.md SÍ se versionan)
-# KIndex (índice local regenerable: binario + db + grafos)
-# Lock del hook de rebuild de Graphify
-# Logs
-android/keystore/
-data/
-drafts/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Entornos virtuales
+.venv/
 env/
 ENV/
+venv/
+
+# Logs
+*.log
+memesp.log
+ms_pid
+
+# ============================================
+# Configuración local (usar .env.example como plantilla)
+# ============================================
+.env
+
+# Base de datos de cuentas y sesiones del login (data/, AUTH_DB por defecto)
+data/
+
+# Borradores remotos guardados por los usuarios (/api/draft)
+drafts/
+
+# ============================================
+# Android (build de la APK: herramientas estándar de Gradle)
+# ============================================
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+android/captures/
+android/.cxx/
+
+# Keystore de firma de la APK (secreto: jamás versionar)
+android/keystore/
+
+# ============================================
+# KIndex (índice local regenerable: binario + db + grafos)
+# ============================================
+.kindex/
+
+# ============================================
+# Graphify: cachés y estado interno regenerable
+# (graph.json y GRAPH_REPORT.md SÍ se versionan)
+# ============================================
+graphify-out/cache/
 graphify-out/.graphify_analysis.json
 graphify-out/.graphify_root
 graphify-out/.rebuild.lock
-graphify-out/cache/
-memesp.log
-ms_pid
-Thumbs.db
-venv/
+graphify-out/.graphify_build_state.json
+graphify-out/.graphify_labels.json
+graphify-out/.graphify_labels.json.sig
+graphify-out/.graphify_labels.pending.json
+graphify-out/graph.html
+graphify-out/manifest.json
