@@ -67,8 +67,13 @@ class MainActivity : AppCompatActivity() {
             allowFileAccess = true
             allowFileAccessFromFileURLs = true
             allowUniversalAccessFromFileURLs = true       // fetch a apiBase (LAN)
-            useWideViewPort = true
-            loadWithOverviewMode = true
+            // Layout a device-width SIEMPRE (bug reportado en la 1.4: con wide
+            // viewport la WebView maquetaba la pagina a ~980px y sin escala,
+            // cortando lienzo, hint y panel por la derecha). El front es
+            // responsive y trae su propia meta viewport: no queremos el ancho
+            // "desktop" de 980px en ningun caso.
+            useWideViewPort = false
+            loadWithOverviewMode = false
         }
         webView.setBackgroundColor(0xFF0B1020.toInt())
         // targetSdk 35: Android 15+ FUERZA edge-to-edge y la WebView se pintaba

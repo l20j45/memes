@@ -696,6 +696,19 @@ function pt(e) {
   };
 }
 
+// Gotero de fondo: color del pixel de la previsualizacion compuesta en coords
+// internas del canvas (pt() ya normaliza el toque, incluso con pinch-zoom).
+// Puede lanzar si el canvas esta tainted (imagen externa sin CORS).
+function sampleCanvasColor(p) {
+  try {
+    const d = cx.getImageData(Math.round(p.x), Math.round(p.y), 1, 1).data;
+    return '#' + [d[0], d[1], d[2]].map((n) => n.toString(16).padStart(2, '0')).join('');
+  } catch {
+    toast('No pude leer ese pixel (imagen externa sin CORS).', true);
+    return null;
+  }
+}
+
 // --- Viewport del lienzo (pinch-zoom / pan en el telefono) -----------------
 // El truco: pt() normaliza contra getBoundingClientRect, que REFLEJA la
 // transformacion CSS del canvas => aplicando translate+scale a cv TODA la
@@ -2259,6 +2272,22 @@ function initEvents() {
     const k = W / 700;
     const pad = 14;
 
+    // gotero armado: muestrea el pixel bajo el toque y lo aplica como color de
+    // fondo (one-shot: no inicia drags, no selecciona capas, no entra al recorte)
+    if (state.eyedropper) {
+      state.eyedropper = false;
+      cv.style.cursor = '';
+      const hex = sampleCanvasColor(p);
+      if (hex) {
+        $('#bg').value = hex;
+        if ($('#bgTransparent').checked) $('#bgTransparent').checked = false;
+        schedule();
+        saveLocal();
+        toast(`Fondo: ${hex.toUpperCase()}`);
+      }
+      return;
+    }
+
     // modo recorte: tiene prioridad sobre todo lo demas
     const cropM = state.cropOn && state.imgs[state.isel];
     if (cropM && cropM.box) {
@@ -2823,6 +2852,20 @@ function initEvents() {
     if ($('#bgTransparent').checked) $('#bgTransparent').checked = false;
     schedule();
     saveLocal();
+  });
+
+  // Gotero de fondo: armar y capturar el proximo toque en el lienzo (ver
+  // pointerdown). Escape o re-pulsar desarma sin cambiar nada.
+  $('#bgDropper').addEventListener('click', () => {
+    state.eyedropper = !state.eyedropper;
+    cv.style.cursor = state.eyedropper ? 'crosshair' : '';
+    if (state.eyedropper) toast('Gotero: toca el lienzo para tomar el color');
+  });
+  window.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && state.eyedropper) {
+      state.eyedropper = false;
+      cv.style.cursor = '';
+    }
   });
 
   $('#bgTransparent').addEventListener('change', () => {

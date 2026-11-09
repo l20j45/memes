@@ -16,6 +16,7 @@ export const state = {
   raf: 0,
   cleanOn: false,
   cropOn: false,
+  eyedropper: false,   // gotero de fondo armado: el proximo toque en el lienzo muestrea color
   cropRect: null,
   cropShape: 'rect',   // 'rect' | 'poly' (poligono con nodos arrastrables)
   view: { z: 1, tx: 0, ty: 0 },   // viewport del lienzo (pinch-zoom/pan; transitorio)
