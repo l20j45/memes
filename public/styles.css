@@ -38,6 +38,11 @@ label{display:flex;flex-direction:column;gap:3px;color:var(--mut);font-size:11px
    antes se veian siempre (bug del modal de login). */
 [hidden]{display:none!important}
 .row{display:flex;gap:6px;align-items:end}.row>*{flex:1}
+/* 8 figuras: flex:1 no encoge por debajo del texto => la fila desbordaba la
+   pantalla sin envolver (corte "Triang..." en la APK). Base 25% (4/fila) con
+   wrap: donde no cabe el texto, envuelve a 3/fila solo. */
+#shapesRow{flex-wrap:wrap}
+#shapesRow .btn{flex:1 1 calc(25% - 6px)}
 .quick-cats{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}.quick-cats .btn{width:100%}
 .in{width:100%;background:var(--soft);border:1px solid var(--line);border-radius:8px;padding:7px 9px;color:var(--ink)}
 textarea.in{resize:vertical;min-height:52px}
