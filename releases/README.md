@@ -6,8 +6,8 @@ Binarios de Android listos para instalar, construidos desde el código fuente de
 
 | Archivo | Para qué |
 | :--- | :--- |
-| [`MemeStudioPro-1.3.apk`](MemeStudioPro-1.3.apk) | **Instala esto** en el móvil (APK release, firmada) — panel reorganizado por flujo de trabajo (`versionCode 4`) |
-| `MemeStudioPro-1.0.*` … `MemeStudioPro-1.2.*` | Releases anteriores (histórico) |
+| [`MemeStudioPro-1.4.2.apk`](MemeStudioPro-1.4.2.apk) | **Instala esto** en el móvil (APK release, firmada) — shell remota de la PWA: viewport a device-width (sin corte lateral), insets de Android 15 (nada bajo las barras del sistema) y gotero de fondo (`versionCode 7`) |
+| `MemeStudioPro-1.0.*` … `MemeStudioPro-1.3.*` | Releases anteriores (histórico) |
 | `MemeStudioPro-1.3.aab` | Formato de **Google Play** (no instala directo; lo sube la Play Console) |
 
 Instalación del APK:
@@ -20,6 +20,7 @@ Features de la build: editor completo con capas, **recorte por nodos**, **marca 
 ## Verificación de integridad (SHA-256)
 
 ```
+00f4ed269279fe001cd866d47698e2993f64a7f70e30557189f50846fd7dcdf2  MemeStudioPro-1.4.2.apk
 873b516b0c6f32e1ba5d7002e3fb251097c1c0394823221083d697e24f15af1b  MemeStudioPro-1.3.apk
 a749dc366975791571fc9169a201c565754ac13c693a183cc2ffee54e5d2c3ba  MemeStudioPro-1.3.aab
 1353e2ad9dbacf9eb7c420d0a22cd93d7dc5ed994cacca0f7a3ac3f9c1e83837  MemeStudioPro-1.2.apk
@@ -34,7 +35,8 @@ Comprueba en el teléfono/máquina: `shasum -a 256 MemeStudioPro-1.0.apk` (Linux
 
 ## Detalles de la build
 
-- **Versión actual:** 1.3 (`versionCode 4`) · **minSdk 24** (Android 7.0+) · targetSdk 35. _1.0–1.2 = versiones históricas._
+- **Versión actual:** 1.4.2 (`versionCode 7`) · **minSdk 24** (Android 7.0+) · targetSdk 35. _1.0–1.3 = versiones históricas._
+- **Novedades 1.4.2:** shell remota de `memes.l20j45.us` (arreglada: la 1.4 cargaba siempre el editor local), insets de edge-to-edge (nada bajo las barras en Android 15+) y viewport a device-width (sin corte lateral del lienzo). El front se actualiza solo desde el servidor.
 - **Firma:** release, certificado `CN=Meme Studio Pro, OU=ReleaseKey` — las **actualizaciones** de estas APK exigen el mismo certificado (ver warning del keystore en [`android/README_ANDROID.md`](../android/README_ANDROID.md#apk-de-release-firmada)).
 - Front incluido: estado del commit indicado abajo; el editor NO se auto-actualiza en la APK (una nueva build de front requiere una APK nueva).
 - Construida con `tools/build_apk.sh release` / `bundle` (ver receta en `android/README_ANDROID.md`).
